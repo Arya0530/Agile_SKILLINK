@@ -121,7 +121,7 @@ final List<String> _jurusanList = [
     prefixIcon: const Icon(Icons.school),
     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
   ),
-  value: _selectedJurusan,
+  initialValue: _selectedJurusan,
   items: _jurusanList.map((jurusan) {
     return DropdownMenuItem(
       value: jurusan,

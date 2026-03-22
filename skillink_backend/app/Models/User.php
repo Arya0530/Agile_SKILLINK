@@ -58,4 +58,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Project::class);
     }
+    // Relasi ke tabel applications (Satu user bisa ngelamar banyak kerjaan)
+    public function applications()
+    {
+        return $this->hasMany(Application::class);
+    }
+    // Relasi ke tabel posts (Satu user bisa bikin banyak postingan)
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
 }

@@ -7,7 +7,7 @@ import 'login_screen.dart';
 import 'api_config.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -100,7 +100,7 @@ Future<void> _deleteItem(String type, int id) async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         _fetchProfileData(); // Refresh data di layar
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Berhasil dihapus!'), backgroundColor: Colors.red)
+          const SnackBar(content: Text('Berhasil dihapus!'), backgroundColor: Colors.green)
         );
       } else {
         // Biar layar HP lu ngasih tau kalau gagal

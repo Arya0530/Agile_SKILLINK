@@ -2,41 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'api_config.dart';
 
-class CreatePostScreen extends StatefulWidget {
-  const CreatePostScreen({super.key});
+class EditPostScreen extends StatefulWidget {
+  final Map post; // Nerima data postingan lama
+  const EditPostScreen({super.key, required this.post});
 
   @override
-  State<CreatePostScreen> createState() => _CreatePostScreenState();
+  State<EditPostScreen> createState() => _EditPostScreenState();
 }
 
-class _CreatePostScreenState extends State<CreatePostScreen> {
-  final TextEditingController _contentController = TextEditingController();
-  final TextEditingController _tagsController = TextEditingController();
-  String _selectedPostType = 'Kolaborasi Proyek'; // Default pilihan
+class _EditPostScreenState extends State<EditPostScreen> {
+  late TextEditingController _contentController;
+  late TextEditingController _tagsController;
+  late String _selectedPostType;
 
   final List<String> _postTypes = ['Kolaborasi Proyek', 'Lomba', 'Open Commission'];
-Future<void> submitPost() async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/posts');
+
+  @override
+  void initState() {
+    super.initState();
+    // Isi otomatis form-nya pakai data lama
+    _contentController = TextEditingController(text: widget.post['content']);
+    _tagsController = TextEditingController(text: widget.post['tags']);
+    
+    // Pastiin tipenya valid, kalau nggak default ke Kolaborasi
+    _selectedPostType = _postTypes.contains(widget.post['post_type']) 
+        ? widget.post['post_type'] 
+        : 'Kolaborasi Proyek';
+  }
+
+  Future<void> updatePost() async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/posts/${widget.post['id']}');
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      
-      // 👇 KITA AMBIL TOKENNYA DARI DOMPET HP
-      final token = prefs.getString('user_token'); 
-      final namaUser = prefs.getString('user_name') ?? 'Mahasiswa Anonim'; 
+      final token = prefs.getString('user_token');
 
-      final response = await http.post(
+      final response = await http.put(
         url,
         headers: {
           'Accept': 'application/json',
-          // 👇 TUNJUKIN KTP-NYA KE SATPAM LARAVEL DI SINI
-          'Authorization': 'Bearer $token', 
+          'Authorization': 'Bearer $token',
         },
         body: {
-          'author_name': namaUser,
           'post_type': _selectedPostType,
           'content': _contentController.text,
           'tags': _tagsController.text,
@@ -47,18 +56,19 @@ Future<void> submitPost() async {
 
       if (response.statusCode == 200 && data['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Berhasil diposting!'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('Postingan diupdate!'), backgroundColor: Colors.green),
         );
-        Navigator.pop(context, true); 
+        Navigator.pop(context, true); // Tutup dan kasih sinyal sukses
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal: ${data['message'] ?? response.statusCode}'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Gagal: ${data['message']}'), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
-      debugPrint("Error nembak API Post: $e");
+      debugPrint("Error nembak API Edit: $e");
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,7 +76,7 @@ Future<void> submitPost() async {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
-        title: const Text('Buat Postingan', style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('Edit Postingan', style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.black),
           onPressed: () => Navigator.pop(context),
@@ -79,11 +89,8 @@ Future<void> submitPost() async {
                 backgroundColor: const Color(0xFF0077B5),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
-              onPressed: () {
-                submitPost();
-                // TODO: Nanti kita isi fungsi nembak API nyimpen post ke Laravel di sini
-              },
-              child: const Text('Posting', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              onPressed: () => updatePost(),
+              child: const Text('Simpan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           )
         ],
@@ -93,11 +100,10 @@ Future<void> submitPost() async {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Pilihan Jenis Postingan
             const Text('Jenis Postingan', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              initialValue: _selectedPostType,
+              value: _selectedPostType,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -112,27 +118,21 @@ Future<void> submitPost() async {
               },
             ),
             const SizedBox(height: 20),
-
-            // Kolom Isi Postingan
             const Text('Deskripsi Proyek / Ajakan', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
             const SizedBox(height: 8),
             TextField(
               controller: _contentController,
-              maxLines: 6, // Biar kotaknya lumayan gede
+              maxLines: 6,
               decoration: InputDecoration(
-                hintText: 'Misal: Lagi butuh anak Frontend buat garap aplikasi e-commerce nih...',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
             const SizedBox(height: 20),
-
-            // Kolom Tags
             const Text('Keahlian yang Dicari (Tags)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
             const SizedBox(height: 8),
             TextField(
               controller: _tagsController,
               decoration: InputDecoration(
-                hintText: 'Misal: #Flutter #UIUX #Laravel',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 prefixIcon: const Icon(Icons.tag),
               ),
