@@ -64,6 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        if (!mounted) return;
         if (data['success'] == true) {
           setState(() {
             _skills = data['data']['skills'] ?? [];

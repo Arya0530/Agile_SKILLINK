@@ -43,6 +43,7 @@ class _NetworkScreenState extends State<NetworkScreen> {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
+      if (!mounted) return;
       setState(() {
         _applicants = data['data'];
       });
@@ -102,21 +103,26 @@ class _NetworkScreenState extends State<NetworkScreen> {
                                       Expanded(
                                         child: ElevatedButton(
                                           onPressed: () async {
-                                            final String pesan =
-                                                "Halo ${app['applicant_name']}, saya Arya Nugraha dari SKILLINK. "
-                                                "Saya mau menerima ajakan kolaborasi kamu untuk project ${app['post_title']} nih. Gas bahas?";
+                                            // 1. Tarik nomor WA dari database
+                                            String noWa = app['applicant_no_wa'] ?? "";
+                                            
+                                            // 2. Format nomornya. Kalau depannya '0', ganti jadi '62'
+                                            if (noWa.startsWith('0')) {
+                                              noWa = '62${noWa.substring(1)}';
+                                            }
 
-                                            final Uri waUrl = Uri.parse(
-                                                "https://wa.me/6281230813044?text=${Uri.encodeComponent(pesan)}");
+                                            // 3. Bikin pesan sapaan dinamis
+                                            final String pesan = "Halo ${app['applicant_name']}, saya Arya Nugraha dari SKILLINK. Saya mau menerima ajakan kolaborasi kamu untuk project ${app['post_title']} nih. Gas bahas?";
+                                            
+                                            // 4. Masukin nomor dinamisnya ke link WA
+                                            final Uri waUrl = Uri.parse("https://wa.me/$noWa?text=${Uri.encodeComponent(pesan)}");
 
+                                            // 5. Lempar ke WhatsApp
                                             try {
                                               await launchUrl(waUrl, mode: LaunchMode.externalApplication);
                                             } catch (e) {
                                               ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                      'Error: Aplikasi WhatsApp nggak merespon. Pastiin udah rebuild!'),
-                                                ),
+                                                const SnackBar(content: Text('Gagal buka WhatsApp nih bro')),
                                               );
                                             }
                                           },

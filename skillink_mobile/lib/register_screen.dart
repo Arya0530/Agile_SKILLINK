@@ -15,6 +15,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _noWaController = TextEditingController();
   String? _selectedJurusan;
 
 final List<String> _jurusanList = [
@@ -56,6 +57,7 @@ final List<String> _jurusanList = [
       'email': _emailController.text,
       'password': _passwordController.text,
       'jurusan': _selectedJurusan,
+      'no_wa': _noWaController.text,
     }),
   );
 
@@ -134,6 +136,12 @@ final List<String> _jurusanList = [
     });
   },
 ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _noWaController, 
+                  keyboardType: TextInputType.phone, // Biar keyboard HP otomatis munculin angka
+                  decoration: _buildInputDecor('Nomor WhatsApp (Cth: 0812...)', Icons.phone_android)
+                ),
                 const SizedBox(height: 16),
                 TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: _buildInputDecor('Email', Icons.email_outlined)),
                 const SizedBox(height: 16),

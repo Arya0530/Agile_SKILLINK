@@ -27,11 +27,13 @@ class _SmartFeedScreenState extends State<SmartFeedScreen> {
   Future<void> fetchPosts() async {
     final url = Uri.parse('${ApiConfig.baseUrl}/posts');
     final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('user_token');
     
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        if (!mounted) return;
         setState(() {
           posts = data['data'];
           isLoading = false;
@@ -138,17 +140,20 @@ class _SmartFeedScreenState extends State<SmartFeedScreen> {
           child: const Icon(Icons.person, color: Colors.white),
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(post['author_name'],
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            Text('${post['author_major']} • ${post['post_type']}',
-                style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          ],
-        ),
-      ],
-    ),
+ Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(post['author_name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(
+                          '${post['author_major']} • ${post['post_type']}', 
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          maxLines: 1, // Maksimal 1 baris
+                          overflow: TextOverflow.ellipsis, // 👇 Ini yang bikin jadi titik-titik kalau kepanjangan
+                        ),
+                      ],
+                    ),
+                  ),
     // 👇 MUNCULIN TITIK TIGA KALAU NAMA PEMBUAT = NAMA LU
                   if (post['author_name'] == myName)
                     PopupMenuButton<String>(
@@ -261,6 +266,8 @@ class _SmartFeedScreenState extends State<SmartFeedScreen> {
               )
             ],
           ),
+            ]
+          )
         );
       },
     );

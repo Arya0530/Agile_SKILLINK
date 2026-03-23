@@ -37,6 +37,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        if (!mounted) return;
         setState(() {
           userData = data['data'];
           isLoading = false;
