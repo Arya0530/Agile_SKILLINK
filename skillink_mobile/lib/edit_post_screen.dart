@@ -103,7 +103,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
             const Text('Jenis Postingan', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _selectedPostType,
+              initialValue: _selectedPostType,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

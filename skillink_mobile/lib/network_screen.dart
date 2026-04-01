@@ -112,11 +112,8 @@ class _NetworkScreenState extends State<NetworkScreen> {
                                             }
 
                                             // 3. Bikin pesan sapaan dinamis
-                                            final String pesan = "Halo ${app['applicant_name']}, saya Arya Nugraha dari SKILLINK. Saya mau menerima ajakan kolaborasi kamu untuk project ${app['post_title']} nih. Gas bahas?";
+                                            final Uri waUrl = Uri.parse("https://wa.me/$noWa");
                                             
-                                            // 4. Masukin nomor dinamisnya ke link WA
-                                            final Uri waUrl = Uri.parse("https://wa.me/$noWa?text=${Uri.encodeComponent(pesan)}");
-
                                             // 5. Lempar ke WhatsApp
                                             try {
                                               await launchUrl(waUrl, mode: LaunchMode.externalApplication);

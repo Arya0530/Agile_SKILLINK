@@ -89,6 +89,7 @@ public function store(Request $request)
                     'applicant_id' => $app->user->id,
                     'applicant_name' => $app->user->name,
                     'applicant_major' => $app->user->jurusan,
+                    'applicant_no_wa' => $app->user->no_wa,
                     'status' => $app->status,
                 ];
             });

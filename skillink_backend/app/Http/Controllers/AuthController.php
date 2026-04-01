@@ -24,6 +24,7 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'jurusan' => $request->jurusan,
+            'no_wa' => $request->no_wa,
         ]);
 
         // 3. Bikin tiket masuk (Token Sanctum)
