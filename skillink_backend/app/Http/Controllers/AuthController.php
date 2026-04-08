@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
@@ -63,5 +64,16 @@ class AuthController extends Controller
             'data' => $user,
             'token' => $token
         ]);
+    }
+
+    // Fungsi buat Lupa Password
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+        $status = Password::sendResetLink(
+        $request->only('email')
+        );
+
+        return response()->json(['message' => $status]);
     }
 }

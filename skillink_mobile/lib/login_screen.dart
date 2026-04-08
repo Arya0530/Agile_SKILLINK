@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'api_config.dart';
-import 'main.dart'; 
-import 'register_screen.dart'; 
+import 'main.dart';
+import 'register_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -44,24 +44,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200 && data['success'] == true) {
         // Kalau sukses cocok, tendang masuk ke halaman Home (MainNavigation)
-      if (response.statusCode == 200 && data['success'] == true) {
-        // 1. Panggil memori HP-nya
-        final prefs = await SharedPreferences.getInstance();
-        prefs.setString('user_token', data['token']);
-        // 2. Simpen Tiket (Token) dan Nama lu ke dalam memori
-        await prefs.setString('token', data['token']);
-        await prefs.setString('user_name', data['data']['name']);
-        await prefs.setString('user_major', data['data']['jurusan']?.toString() ?? 'Jurusan Belum Diatur');
-        
-        // (Boleh tambahin email atau ID kalau nanti butuh)
-        // await prefs.setString('user_email', data['data']['email']);
+        if (response.statusCode == 200 && data['success'] == true) {
+          // 1. Panggil memori HP-nya
+          final prefs = await SharedPreferences.getInstance();
+          prefs.setString('user_token', data['token']);
+          // 2. Simpen Tiket (Token) dan Nama lu ke dalam memori
+          await prefs.setString('token', data['token']);
+          await prefs.setString('user_name', data['data']['name']);
+          await prefs.setString(
+            'user_major',
+            data['data']['jurusan']?.toString() ?? 'Jurusan Belum Diatur',
+          );
 
-        // 3. Baru deh tendang masuk ke halaman Home
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
-        );
-      }
+          // (Boleh tambahin email atau ID kalau nanti butuh)
+          // await prefs.setString('user_email', data['data']['email']);
+
+          // 3. Baru deh tendang masuk ke halaman Home
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainNavigation()),
+          );
+        }
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainNavigation()),
@@ -69,18 +72,54 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         // Kalau email/password salah
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['message'] ?? 'Login gagal!'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(data['message'] ?? 'Login gagal!'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
       debugPrint("Waduh, error login: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal nyambung ke server!'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Gagal nyambung ke server!'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  // --- FUNGSI BUAT LUPA PASSWORD ---
+  Future<void> forgotPassword() async {
+    if (_emailController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Isi email dulu!')));
+      return;
+    }
+
+    final url = Uri.parse('${ApiConfig.baseUrl}/forgot-password');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Accept': 'application/json'},
+        body: {'email': _emailController.text},
+      );
+
+      final data = json.decode(response.body);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(data['message'] ?? 'Link reset dikirim')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal kirim reset password')),
+      );
     }
   }
 
@@ -96,12 +135,31 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('SKILLINK', textAlign: TextAlign.center, style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Color(0xFF0077B5))),
+                const Text(
+                  'SKILLINK',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0077B5),
+                  ),
+                ),
                 const SizedBox(height: 10),
-                const Text('Masuk untuk mulai kolaborasi', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey)),
+                const Text(
+                  'Masuk untuk mulai kolaborasi',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
                 const SizedBox(height: 50),
 
-                TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: _buildInputDecor('Email Mahasiswa / Pribadi', Icons.email_outlined)),
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: _buildInputDecor(
+                    'Email Mahasiswa / Pribadi',
+                    Icons.email_outlined,
+                  ),
+                ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: _passwordController,
@@ -110,19 +168,31 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      icon: Icon(_isObscure ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(
+                        _isObscure ? Icons.visibility_off : Icons.visibility,
+                      ),
                       onPressed: () {
-                        setState(() { _isObscure = !_isObscure; });
+                        setState(() {
+                          _isObscure = !_isObscure;
+                        });
                       },
                     ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
 
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton(onPressed: () {}, child: const Text('Lupa Password?', style: TextStyle(color: Color(0xFF0077B5)))),
+                  child: TextButton(
+                    onPressed: forgotPassword,
+                    child: const Text(
+                      'Lupa Password?',
+                      style: TextStyle(color: Color(0xFF0077B5)),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -132,30 +202,55 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0077B5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    onPressed: _isLoading ? null : () {
-                      // Panggil fungsi cek ke Laravel
-                      loginUser();
-                    },
-                    child: _isLoading 
-                        ? const CircularProgressIndicator(color: Colors.white) 
-                        : const Text('LOGIN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                            // Panggil fungsi cek ke Laravel
+                            loginUser();
+                          },
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'LOGIN',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
 
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF0077B5), width: 2),
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RegisterScreen(),
+                      ),
+                    );
                   },
-                  child: const Text('REGISTER', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0077B5))),
+                  child: const Text(
+                    'REGISTER',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0077B5),
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -9,7 +9,8 @@ use App\Http\Controllers\AuthController;
 Route::get('/posts', [PostController::class, 'index']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-
+// Rute forgot password
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 
 // Rute-rute yang WAJIB LOGIN (Dilindungi Satpam Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
@@ -28,10 +29,10 @@ Route::get('/users/{id}/profile', function($id) {
         }
         return response()->json(['success' => true, 'data' => $user]);
     });
-    
+
     // Rute buat fitur Profil
     Route::get('/profile', [ProfileController::class, 'getProfile']);
     Route::post('/profile/skills', [ProfileController::class, 'addSkill']);
     Route::post('/profile/projects', [ProfileController::class, 'addProject']);
-    
+
 });
