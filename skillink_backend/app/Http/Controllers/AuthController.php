@@ -66,14 +66,29 @@ class AuthController extends Controller
         ]);
     }
 
-    // Fungsi buat Lupa Password
-    public function forgotPassword(Request $request)
+    // Fungsi buat Reset Password
+    public function resetPasswordDirect(Request $request)
     {
-        $request->validate(['email' => 'required|email']);
-        $status = Password::sendResetLink(
-        $request->only('email')
-        );
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|min:6',
+        ]);
 
-        return response()->json(['message' => $status]);
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email tidak ditemukan'
+            ], 404);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password berhasil direset'
+        ]);
     }
 }

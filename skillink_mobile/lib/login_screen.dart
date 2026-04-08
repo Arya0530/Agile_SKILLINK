@@ -94,33 +94,42 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // --- FUNGSI BUAT LUPA PASSWORD ---
-  Future<void> forgotPassword() async {
-    if (_emailController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Isi email dulu!')));
-      return;
-    }
+  void showResetDialog() {
+    TextEditingController newPasswordController = TextEditingController();
 
-    final url = Uri.parse('${ApiConfig.baseUrl}/forgot-password');
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Reset Password"),
+          content: TextField(
+            controller: newPasswordController,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: "Password Baru"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                final response = await http.post(
+                  Uri.parse('${ApiConfig.baseUrl}/reset-password-direct'),
+                  body: {
+                    "email": _emailController.text,
+                    "password": newPasswordController.text,
+                  },
+                );
 
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Accept': 'application/json'},
-        body: {'email': _emailController.text},
-      );
+                Navigator.pop(context);
 
-      final data = json.decode(response.body);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'] ?? 'Link reset dikirim')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal kirim reset password')),
-      );
-    }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Password berhasil direset")),
+                );
+              },
+              child: const Text("Reset"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -187,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: forgotPassword,
+                    onPressed: showResetDialog,
                     child: const Text(
                       'Lupa Password?',
                       style: TextStyle(color: Color(0xFF0077B5)),

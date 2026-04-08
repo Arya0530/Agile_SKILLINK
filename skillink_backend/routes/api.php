@@ -9,8 +9,8 @@ use App\Http\Controllers\AuthController;
 Route::get('/posts', [PostController::class, 'index']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-// Rute forgot password
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+// Rute reset password
+Route::post('/reset-password-direct', [AuthController::class, 'resetPasswordDirect']);
 
 // Rute-rute yang WAJIB LOGIN (Dilindungi Satpam Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
