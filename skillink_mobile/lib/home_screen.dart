@@ -222,13 +222,17 @@ class _SmartFeedScreenState extends State<SmartFeedScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.thumb_up_alt_outlined, color: Colors.grey[600], size: 20),
+                      Icon(Icons.access_time, color: Colors.grey[600], size: 18),
                       const SizedBox(width: 4),
-                      Text('Suka', style: TextStyle(color: Colors.grey[600])),
-                      const SizedBox(width: 16),
-                      Icon(Icons.chat_bubble_outline, color: Colors.grey[600], size: 20),
-                      const SizedBox(width: 4),
-                      Text('Komen', style: TextStyle(color: Colors.grey[600])),
+                      Text(
+                        post['created_at'] != null
+                            ? post['created_at'].toString().substring(0, 10)
+                            : '-',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                   post['author_name'] != myName
