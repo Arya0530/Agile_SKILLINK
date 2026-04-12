@@ -20,7 +20,7 @@ class SkillinkApp extends StatelessWidget {
       title: 'SKILLINK',
       theme: ThemeData(
         primaryColor: const Color(0xFF0077B5),
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5), 
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
       ),
       home: const LoginScreen(),
     );
@@ -32,52 +32,54 @@ class MainNavigation extends StatefulWidget {
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
-  
 }
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
-  Key _homeRefreshKey = UniqueKey();
+
+  // GlobalKey untuk akses fetchPosts() dari luar (dipakai FAB setelah buat postingan)
+  final GlobalKey<SmartFeedScreenState> _feedKey = GlobalKey();
 
   List<Widget> get _widgetOptions => [
-    SmartFeedScreen(key: _homeRefreshKey), // Kuncinya dipasang di sini!
-    const NetworkScreen(),   
-    const ProfileScreen(),   
-  ];
+        SmartFeedScreen(key: _feedKey),
+        const NetworkScreen(),
+        const ProfileScreen(),
+      ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-appBar: AppBar(
-  backgroundColor: Colors.white,
-  elevation: 1,
-  title: const Text(
-    'SKILLINK',
-    style: TextStyle(
-      color: Color(0xFF0077B5),
-      fontWeight: FontWeight.bold,
-      fontSize: 22,
-    ),
-  ),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.logout, color: Colors.grey),
-      onPressed: () async {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.clear();
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: const Text(
+          'SKILLINK',
+          style: TextStyle(
+            color: Color(0xFF0077B5),
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        actions: [
+          // Tombol logout
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.grey),
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
 
-        if (!mounted) return;
+              if (!mounted) return;
 
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false,
-        );
-      },
-    ),
-  ],
-),
-     body: IndexedStack(
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
+            },
+          ),
+        ],
+      ),
+      body: IndexedStack(
         index: _selectedIndex,
         children: _widgetOptions,
       ),
@@ -99,19 +101,16 @@ appBar: AppBar(
       // Tombol Plus (+) melayang di kanan bawah
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF0077B5),
-        onPressed: () async { 
+        onPressed: () async {
           // Nungguin layar Create Post ditutup
           final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const CreatePostScreen()),
           );
 
-          // Kalau balikan sinyalnya true (sukses posting)
+          // Kalau balikan sinyalnya true (sukses posting), langsung refresh feed
           if (result == true) {
-            setState(() {
-              // Ganti kuncinya, paksa SmartFeedScreen buat narik data ulang
-              _homeRefreshKey = UniqueKey(); 
-            });
+            _feedKey.currentState?.fetchPosts();
           }
         },
         child: const Icon(Icons.add, color: Colors.white),

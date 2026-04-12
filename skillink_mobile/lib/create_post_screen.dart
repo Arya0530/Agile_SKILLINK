@@ -17,7 +17,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _tagsController = TextEditingController();
   String _selectedPostType = 'Kolaborasi Proyek'; // Default pilihan
 
-  final List<String> _postTypes = ['Kolaborasi Proyek', 'Lomba', 'Open Commission'];
+  final List<String> _postTypes = ['Kolaborasi Proyek', 'Kolaborasi Lomba', 'Kolaborasi Projek'];
 Future<void> submitPost() async {
     final url = Uri.parse('${ApiConfig.baseUrl}/posts');
 
