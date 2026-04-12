@@ -396,6 +396,51 @@ class SmartFeedScreenState extends State<SmartFeedScreen> {
                     ),
         ),
       ],
+                ],
+              ),
+              const SizedBox(height: 12),
+              
+              // --- ISI POSTINGAN ---
+              Text(post['content']),
+              const SizedBox(height: 8),
+              Text(post['tags'], style: const TextStyle(color: Color(0xFF0077B5), fontWeight: FontWeight.bold)),
+              const Divider(height: 30),
+              
+              // --- FOOTER (SUKA, KOMEN, APPLY) ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, color: Colors.grey[600], size: 18),
+                      const SizedBox(width: 4),
+                      Text(
+                        post['created_at'] != null
+                            ? post['created_at'].toString().substring(0, 10)
+                            : '-',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  post['author_name'] != myName
+                      ? ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: post['is_apply'] == 1 ? const Color(0xFF0077B5) : Colors.green,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                          onPressed: () => _applyJob(post['id']),
+                          child: Text(post['is_apply'] == 1 ? 'Easy Apply' : 'Sewa Jasa', style: const TextStyle(color: Colors.white)),
+                        )
+                      : const Text('Postingan Sendiri', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+                ],
+              )
+            ],
+          ),
+        );
+      },
     );
   }
 }
