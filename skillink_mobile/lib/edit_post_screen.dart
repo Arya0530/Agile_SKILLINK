@@ -17,7 +17,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
   late TextEditingController _tagsController;
   late String _selectedPostType;
 
-  final List<String> _postTypes = ['Kolaborasi Proyek', 'Lomba', 'Open Commission'];
+  final List<String> _postTypes = ['Kolaborasi Proyek', 'Kolaborasi Lomba', 'Kolaborasi Projek'];
 
   @override
   void initState() {
