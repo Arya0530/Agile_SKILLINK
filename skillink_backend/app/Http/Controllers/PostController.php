@@ -7,10 +7,16 @@ use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Ngambil semua data postingan, diurutin dari yang paling baru
-        $posts = Post::latest()->get();
+        $query = Post::latest();
+
+        // Kalau ada ?tag=xxx dari Flutter, filter berdasarkan kolom tags
+        if ($request->has('tag') && $request->tag !== '') {
+            $query->where('tags', 'like', '%' . $request->tag . '%');
+        }
+
+        $posts = $query->get();
 
         // Kirim datanya dalam bentuk JSON
         return response()->json([
@@ -18,9 +24,9 @@ class PostController extends Controller
             'message' => 'Daftar Postingan Skillink Berhasil Diambil',
             'data'    => $posts
         ]);
-        
     }
-public function store(Request $request)
+
+    public function store(Request $request)
     {
         $request->validate([
             'post_type' => 'required|string',
@@ -35,7 +41,7 @@ public function store(Request $request)
             'post_type' => $request->post_type,
             'content' => $request->input('content'),
             'tags' => $request->tags,
-            'is_apply' => 1, 
+            'is_apply' => 1,
             'is_boosted' => 0,
         ]);
 
@@ -45,6 +51,7 @@ public function store(Request $request)
             'data' => $post
         ]);
     }
+
     // Fungsi buat nerima lamaran (Easy Apply)
     public function apply(Request $request, $id)
     {
@@ -73,13 +80,14 @@ public function store(Request $request)
 
         return response()->json(['success' => true, 'message' => 'Berhasil dikirim!']);
     }
-// Fungsi buat ngambil daftar orang yang ngelamar ke postingan user ini
+
+    // Fungsi buat ngambil daftar orang yang ngelamar ke postingan user ini
     public function getMyApplicants(Request $request)
     {
         // Cari semua postingan milik user yang lagi login
         // Terus ambil data orang yang ngelamar (applications) beserta profil pelamarnya (user)
         $posts = $request->user()->posts()->with('applications.user')->get();
-        
+
         // Kumpulin semua lamaran dari semua postingan biar gampang ditampilin di Flutter
         $allApplications = $posts->flatMap(function ($post) {
             return $post->applications->map(function ($app) use ($post) {
@@ -100,6 +108,7 @@ public function store(Request $request)
             'data' => $allApplications
         ]);
     }
+
     // Fungsi buat hapus postingan sendiri
     public function destroy(Request $request, $id)
     {
@@ -118,6 +127,7 @@ public function store(Request $request)
 
         return response()->json(['success' => true, 'message' => 'Postingan berhasil dihapus!']);
     }
+
     // Fungsi buat ngedit postingan sendiri
     public function update(Request $request, $id)
     {
