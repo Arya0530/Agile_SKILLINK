@@ -58,34 +58,41 @@ class _NetworkScreenState extends State<NetworkScreen> {
   }
 }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF3F2EF),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF0077B5)))
-          : _applicants.isEmpty
-              ? const Center(child: Text('Belum ada undangan kolaborasi nih.'))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(8.0),
-                  itemCount: _applicants.length,
-                  itemBuilder: (context, index) {
-                    final app = _applicants[index];
-                    return Card(
-                      color: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Row(
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: const Color(0xFFF3F2EF),
+    body: _isLoading
+        ? const Center(child: CircularProgressIndicator(color: Color(0xFF0077B5)))
+        : RefreshIndicator(
+            onRefresh: _fetchApplicants,
+            color: const Color(0xFF0077B5),
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(8.0),
+              itemCount: _applicants.length,
+              itemBuilder: (context, index) {
+                final app = _applicants[index];
+
+                return Card(
+                  color: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column( // Pakai Column biar Row button di bawah punya ruang sendiri
+                      children: [
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             CircleAvatar(
                               radius: 24,
                               backgroundColor: Colors.purple,
                               child: Text(
-                                app['applicant_name'][0].toUpperCase(), 
-                                style: const TextStyle(color: Colors.white, fontSize: 20)
+                                app['applicant_name'][0].toUpperCase(),
+                                style: const TextStyle(color: Colors.white, fontSize: 20),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -93,79 +100,79 @@ class _NetworkScreenState extends State<NetworkScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(app['applicant_name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                  Text(app['applicant_major'] ?? 'Mahasiswa', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                                  Text(
+                                    app['applicant_name'],
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  Text(
+                                    app['applicant_major'] ?? 'Mahasiswa',
+                                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                  ),
                                   const SizedBox(height: 4),
-                                  Text('Mengajak koneksi dari postingan "${app['post_title']}"', style: const TextStyle(fontSize: 13)),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: ElevatedButton(
-                                          onPressed: () async {
-                                            // 1. Tarik nomor WA dari database
-                                            String noWa = app['applicant_no_wa'] ?? "";
-                                            
-                                            // 2. Format nomornya. Kalau depannya '0', ganti jadi '62'
-                                            if (noWa.startsWith('0')) {
-                                              noWa = '62${noWa.substring(1)}';
-                                            }
-
-                                            // 3. Bikin pesan sapaan dinamis
-                                            final Uri waUrl = Uri.parse("https://wa.me/$noWa");
-                                            
-                                            // 5. Lempar ke WhatsApp
-                                            try {
-                                              await launchUrl(waUrl, mode: LaunchMode.externalApplication);
-                                            } catch (e) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('Gagal buka WhatsApp nih bro')),
-                                              );
-                                            }
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.green,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(20),
-                                            ),
-                                          ),
-                                          child: const Text(
-                                            'Terima & WA',
-                                            style: TextStyle(color: Colors.white),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: ElevatedButton(
-                                         onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => PublicProfileScreen(
-                                                userId: app['applicant_id'],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF0077B5),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
-                                          ),
-                                          child: const Text('Liat Profil', style: TextStyle(color: Colors.white)),
-                                        ),
-                                      ),
-                                    ],
-                                  )
+                                  Text(
+                                    'Mengajak koneksi dari postingan "${app['post_title']}"',
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
                                 ],
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    );
-                  },
-                ),
-    );
-  }
+                        const SizedBox(height: 16), // Jeda antara info dan tombol
+                        Row(
+                          children: [
+                            // Tombol Terima & WA
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  String noWa = app['applicant_no_wa'] ?? "";
+                                  if (noWa.startsWith('0')) noWa = '62${noWa.substring(1)}';
+                                  final Uri waUrl = Uri.parse("https://wa.me/$noWa");
+                                  try {
+                                    await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Gagal buka WhatsApp nih bro')),
+                                    );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white, // Warna teks
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                ),
+                                child: const Text('Terima & WA', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Tombol Liat Profil
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PublicProfileScreen(userId: app['applicant_id']),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF0077B5),
+                                  foregroundColor: Colors.white, // Warna teks
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                ),
+                                child: const Text('Liat Profil', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+  );
+}
 }

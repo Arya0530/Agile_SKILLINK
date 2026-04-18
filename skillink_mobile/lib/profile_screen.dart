@@ -16,11 +16,10 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String _name = 'Memuat...';
   String _major = 'Memuat...';
-  
-  // Variabel buat nampung data dari Laravel
   List<dynamic> _skills = [];
   List<dynamic> _projects = [];
   bool _isLoading = true;
+
   // 🛡️ ROMPI ANTI PELURU DEFUNCT ERROR
   @override
   void setState(VoidCallback fn) {
@@ -31,23 +30,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _loadUserData();
-    _fetchProfileData(); // Tarik data dari Laravel pas halaman dibuka
+    _fetchProfileData(); 
   }
 
-  // Tarik Nama & Jurusan dari memori HP
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
     setState(() {
       _name = prefs.getString('user_name') ?? 'Nama Belum Diatur';
       _major = prefs.getString('user_major') ?? 'Jurusan Belum Diatur';
     });
   }
-  }
 
-  // Tarik Data Skill & Project dari API Laravel
   Future<void> _fetchProfileData() async {
-    setState(() => _isLoading = true);
+    // Kita tidak pakai _isLoading = true di sini agar saat pull-to-refresh
+    // indikator bawaan RefreshIndicator yang jalan, bukan Full Screen Loader.
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('user_token');
@@ -64,7 +60,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (!mounted) return;
         if (data['success'] == true) {
           setState(() {
             _skills = data['data']['skills'] ?? [];
@@ -78,9 +73,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _isLoading = false);
     }
   }
-Future<void> _deleteItem(String type, int id) async {
-    debugPrint("TOMBOL DITEKAN! Mau hapus $type dengan ID: $id");
-    
+
+  Future<void> _deleteItem(String type, int id) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('user_token');
     
@@ -90,37 +84,17 @@ Future<void> _deleteItem(String type, int id) async {
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
-          'ngrok-skip-browser-warning': 'true',
         },
       );
 
-      // 👇 INI CCTV BUAT NANGKEP ALASAN LARAVEL
-      debugPrint("STATUS HAPUS: ${response.statusCode}");
-      debugPrint("BALASAN HAPUS: ${response.body}");
-
       if (response.statusCode == 200 || response.statusCode == 201) {
-        _fetchProfileData(); // Refresh data di layar
+        _fetchProfileData();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Berhasil dihapus!'), backgroundColor: Colors.green)
-        );
-      } else {
-        // Biar layar HP lu ngasih tau kalau gagal
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal Hapus: ${response.statusCode}'), backgroundColor: Colors.orange)
         );
       }
     } catch (e) {
       debugPrint("Gagal ngehapus: $e");
-    }
-  }
-  Future<void> _handleLogout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
     }
   }
 
@@ -128,116 +102,117 @@ Future<void> _deleteItem(String type, int id) async {
   Widget build(BuildContext context) {
     return _isLoading 
       ? const Center(child: CircularProgressIndicator(color: Color(0xFF0077B5)))
-      : ListView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(16.0),
-      children: [
-        // --- Bagian Header Profil ---
-        Center(
-          child: Column(
+      : RefreshIndicator(
+          color: const Color(0xFF0077B5),
+          onRefresh: _fetchProfileData, // Fungsi yang dipanggil saat ditarik
+          child: ListView(
+            // physics ini WAJIB AlwaysScrollable agar biarpun konten sedikit, tetap bisa ditarik
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            padding: const EdgeInsets.all(16.0),
             children: [
-              const CircleAvatar(
-                radius: 50,
-                backgroundColor: Color(0xFF0077B5),
-                child: Icon(Icons.person, size: 50, color: Colors.white),
-              ),
-              const SizedBox(height: 16),
-              Text(_name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(_major, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () async {
-                  // Tungguin user selesai di halaman edit
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const EditProfileScreen()),
-                  );
-                  // Kalau udah balik, panggil fungsi fetch lagi biar layarnya ke-refresh!
-                  _fetchProfileData();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0077B5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              // --- Bagian Header Profil ---
+              Center(
+                child: Column(
+                  children: [
+                    const CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Color(0xFF0077B5),
+                      child: Icon(Icons.person, size: 50, color: Colors.white),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(_name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(_major, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+                        );
+                        _fetchProfileData(); // Refresh pas balik dari edit
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0077B5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: const Text('Edit Profil', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
                 ),
-                child: const Text('Edit Profil', style: TextStyle(color: Colors.white)),
+              ),
+              const Divider(height: 40, thickness: 1),
+
+              // --- Bagian Skill Badges ---
+              const Text('Tech Stack & Skills', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _skills.isEmpty 
+                  ? [const Text('Belum ada skill ditambahkan.', style: TextStyle(color: Colors.grey))]
+                  : _skills.map((skill) => _buildSkillBadge(skill['id'], skill['name'])).toList(),
+              ),
+              const Divider(height: 40, thickness: 1),
+
+              // --- Bagian Riwayat Proyek ---
+              const Text('Riwayat Proyek', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Column(
+                children: _projects.isEmpty
+                  ? [const Text('Belum ada riwayat proyek.', style: TextStyle(color: Colors.grey))]
+                  : _projects.map((proj) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: _buildProjectCard(
+                        id: proj['id'],
+                        title: proj['title'],
+                        role: proj['role'],
+                        description: proj['description'],
+                      ),
+                    )).toList(),
               ),
             ],
           ),
-        ),
-        const Divider(height: 40, thickness: 1),
-
-        // --- Bagian Skill Badges ---
-        const Text('Tech Stack & Skills', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          // Looping data skill dari Laravel
-          children: _skills.isEmpty 
-            ? [const Text('Belum ada skill ditambahkan.', style: TextStyle(color: Colors.grey))]
-            : _skills.map((skill) => _buildSkillBadge(skill['id'], skill['name'])).toList(),
-        ),
-        const Divider(height: 40, thickness: 1),
-
-        // --- Bagian Riwayat Proyek ---
-        const Text('Riwayat Proyek', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        // Looping data project dari Laravel
-        Column(
-          children: _projects.isEmpty
-            ? [const Text('Belum ada riwayat proyek.', style: TextStyle(color: Colors.grey))]
-            : _projects.map((proj) => Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: _buildProjectCard(
-                  id: proj['id'],
-                  title: proj['title'],
-                  role: proj['role'],
-                  description: proj['description'],
-                ),
-              )).toList(),
-        ),
-      ],
-    );
+        );
   }
 
   Widget _buildSkillBadge(int id, String skill) {
     return GestureDetector(
-      onLongPress: () => _deleteItem('skills', id), // Pelatuk hapus skill
+      onLongPress: () => _deleteItem('skills', id),
       child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F3F9),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF0077B5)),
-      ),
-      child: Text(skill, style: const TextStyle(color: Color(0xFF0077B5), fontWeight: FontWeight.bold)),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8F3F9),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF0077B5)),
+        ),
+        child: Text(skill, style: const TextStyle(color: Color(0xFF0077B5), fontWeight: FontWeight.bold)),
       ),
     );
   }
 
-    Widget _buildProjectCard({required int id, required String title, required String role, required String description}) {
+  Widget _buildProjectCard({required int id, required String title, required String role, required String description}) {
     return GestureDetector(
-      onLongPress: () => _deleteItem('projects', id), // Pelatuk hapus project
+      onLongPress: () => _deleteItem('projects', id),
       child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 4, spreadRadius: 1)],
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 4, spreadRadius: 1)],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(role, style: const TextStyle(fontSize: 14, color: Colors.orange, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(description, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(role, style: const TextStyle(fontSize: 14, color: Colors.orange, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(description, style: const TextStyle(fontSize: 14, color: Colors.black87)),
-        ],
-      ),
-       ),
     );
   }
 }

@@ -1,5 +1,4 @@
 class ApiConfig {
   // Semua file bakal nanya alamat ke sini
-  static const String baseUrl =
-      'https://unphrased-noninstinctively-julietta.ngrok-free.dev/api';
+static const String baseUrl = 'http://skillink.my.id/api';
 }

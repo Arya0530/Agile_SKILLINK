@@ -217,248 +217,207 @@ class SmartFeedScreenState extends State<SmartFeedScreen> {
 
         // --- LIST POSTINGAN ---
         Expanded(
-          child: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF0077B5)),
-                )
-              : posts.isEmpty
-              ? Center(
+child: isLoading
+? const Center(
+child: CircularProgressIndicator(color: Color(0xFF0077B5)),
+)
+: RefreshIndicator(
+onRefresh: fetchPosts,
+color: const Color(0xFF0077B5),
+child: posts.isEmpty
+? ListView(
+physics: const AlwaysScrollableScrollPhysics(),
+children: [
+SizedBox(
+height: MediaQuery.of(context).size.height * 0.6,
+child: Center(
+child: Column(
+mainAxisAlignment: MainAxisAlignment.center,
+children: [
+const Icon(
+Icons.search_off,
+size: 48,
+color: Colors.grey,
+),
+const SizedBox(height: 12),
+Text(
+_searchQuery.isNotEmpty
+? 'Nggak ada postingan dengan tag "$_searchQuery"'
+: 'Belum ada postingan nih.',
+style: const TextStyle(color: Colors.grey),
+textAlign: TextAlign.center,
+),
+],
+),
+),
+),
+],
+)
+: ListView.builder(
+physics: const AlwaysScrollableScrollPhysics(),
+itemCount: posts.length,
+itemBuilder: (context, index) {
+final post = posts[index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.white,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.search_off,
-                        size: 48,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _searchQuery.isNotEmpty
-                            ? 'Nggak ada postingan dengan tag "$_searchQuery"'
-                            : 'Belum ada postingan nih.',
-                        style: const TextStyle(color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: posts.length,
-                  itemBuilder: (context, index) {
-                    final post = posts[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(16),
-                      color: Colors.white,
-                      child: Column(
+                      // HEADER
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // --- HEADER POSTINGAN ---
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: Colors.grey[300],
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
+                          CircleAvatar(
+                            backgroundColor: Colors.grey[300],
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  post['author_name'],
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      post['author_name'],
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${post['author_major']} • ${post['post_type']}',
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 12,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (post['author_name'] == myName)
-                                PopupMenuButton<String>(
-                                  icon: const Icon(
-                                    Icons.more_horiz,
+                                Text(
+                                  '${post['author_major']} • ${post['post_type']}',
+                                  style: const TextStyle(
                                     color: Colors.grey,
+                                    fontSize: 12,
                                   ),
-                                  color: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  onSelected: (value) async {
-                                    if (value == 'edit') {
-                                      final result = await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              EditPostScreen(post: post),
-                                        ),
-                                      );
-                                      if (result == true) fetchPosts();
-                                    } else if (value == 'hapus') {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          backgroundColor: Colors.white,
-                                          title: const Text('Hapus Postingan?'),
-                                          content: const Text(
-                                            'Yakin mau hapus? Nggak bisa dibalikin lho.',
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context),
-                                              child: const Text(
-                                                'Batal',
-                                                style: TextStyle(
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                                _deletePost(post['id']);
-                                              },
-                                              child: const Text(
-                                                'Hapus',
-                                                style: TextStyle(
-                                                  color: Colors.red,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  itemBuilder: (BuildContext context) => [
-                                    const PopupMenuItem(
-                                      value: 'edit',
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.edit_outlined,
-                                            color: Color(0xFF0077B5),
-                                            size: 20,
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text('Edit Postingan'),
-                                        ],
-                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (post['author_name'] == myName)
+                            PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_horiz, color: Colors.grey),
+                              onSelected: (value) async {
+                                if (value == 'edit') {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          EditPostScreen(post: post),
                                     ),
-                                    const PopupMenuItem(
-                                      value: 'hapus',
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.delete_outline,
-                                            color: Colors.red,
-                                            size: 20,
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text(
+                                  );
+                                  if (result == true) fetchPosts();
+                                } else if (value == 'hapus') {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Hapus Postingan?'),
+                                      content: const Text(
+                                        'Yakin mau hapus? Nggak bisa dibalikin lho.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text('Batal'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            _deletePost(post['id']);
+                                          },
+                                          child: const Text(
                                             'Hapus',
                                             style: TextStyle(color: Colors.red),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  );
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Text('Edit Postingan'),
                                 ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-
-                          // --- ISI POSTINGAN ---
-                          Text(post['content']),
-                          const SizedBox(height: 8),
-                          Text(
-                            post['tags'],
-                            style: const TextStyle(
-                              color: Color(0xFF0077B5),
-                              fontWeight: FontWeight.bold,
+                                const PopupMenuItem(
+                                  value: 'hapus',
+                                  child: Text('Hapus'),
+                                ),
+                              ],
                             ),
-                          ),
-                          const Divider(height: 30),
-
-                          // --- FOOTER (SUKA, KOMEN, APPLY) ---
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time,
-                                    color: Colors.grey[600],
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    post['created_at'] != null
-                                        ? post['created_at']
-                                              .toString()
-                                              .substring(0, 10)
-                                        : '-',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              post['author_name'] != myName
-                                  ? ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: post['is_apply'] == 1
-                                            ? const Color(0xFF0077B5)
-                                            : Colors.green,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                        ),
-                                      ),
-                                      onPressed: () => _applyJob(post['id']),
-                                      child: Text(
-                                        post['is_apply'] == 1
-                                            ? 'Easy Apply'
-                                            : 'Sewa Jasa',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Postingan Sendiri',
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    ),
-                            ],
-                          ),
                         ],
                       ),
-                    );
-                  },
-                ),
-        ),
+
+                      const SizedBox(height: 12),
+
+                      // CONTENT
+                      Text(post['content']),
+                      const SizedBox(height: 8),
+
+                      // TAG
+                      Text(
+                        post['tags'],
+                        style: const TextStyle(
+                          color: Color(0xFF0077B5),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const Divider(height: 30),
+
+                      // FOOTER
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.access_time, size: 18, color: Colors.grey),
+                              const SizedBox(width: 4),
+                              Text(
+                                post['created_at'] != null
+                                    ? post['created_at'].toString().substring(0, 10)
+                                    : '-',
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                          post['author_name'] != myName
+                              ? 
+                            ElevatedButton(
+                              onPressed: () => _applyJob(post['id']),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: post['is_apply'] == 1
+                                    ? const Color(0xFF0077B5)
+                                    : const Color(0xFF0077B5), // kalau mau sama semua warna
+                              ),
+                              child: Text(
+                                post['is_apply'] == 1
+                                    ? 'Easy Apply'
+                                    : 'Apply',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            )
+                              : const Text(
+                                  'Postingan Sendiri',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+    ),
+)
       ],
     );
   }
