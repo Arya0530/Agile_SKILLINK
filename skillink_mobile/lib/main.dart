@@ -98,23 +98,6 @@ class _MainNavigationState extends State<MainNavigation> {
           });
         },
       ),
-      // Tombol Plus (+) melayang di kanan bawah
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF0077B5),
-        onPressed: () async {
-          // Nungguin layar Create Post ditutup
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CreatePostScreen()),
-          );
-
-          // Kalau balikan sinyalnya true (sukses posting), langsung refresh feed
-          if (result == true) {
-            _feedKey.currentState?.fetchPosts();
-          }
-        },
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 }

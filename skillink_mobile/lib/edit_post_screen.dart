@@ -44,6 +44,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
+          'ngrok-skip-browser-warning': 'true',
         },
         body: {
           'post_type': _selectedPostType,
