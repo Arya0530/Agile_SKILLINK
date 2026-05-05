@@ -16,6 +16,8 @@ class NetworkScreen extends StatefulWidget {
 class _NetworkScreenState extends State<NetworkScreen> {
   List<dynamic> _applicants = [];
   bool _isLoading = true;
+  Set<int> expandedIndex = {};
+ 
 
   @override
   void initState() {
@@ -60,119 +62,209 @@ class _NetworkScreenState extends State<NetworkScreen> {
 
 @override
 Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: const Color(0xFFF3F2EF),
-    body: _isLoading
-        ? const Center(child: CircularProgressIndicator(color: Color(0xFF0077B5)))
-        : RefreshIndicator(
-            onRefresh: _fetchApplicants,
-            color: const Color(0xFF0077B5),
-            child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(8.0),
-              itemCount: _applicants.length,
-              itemBuilder: (context, index) {
-                final app = _applicants[index];
+  return DefaultTabController(
+    length: 2,
+    child: Scaffold(
+      backgroundColor: const Color(0xFFF3F2EF),
 
-                return Card(
-                  color: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column( // Pakai Column biar Row button di bawah punya ruang sendiri
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundColor: Colors.purple,
-                              child: Text(
-                                app['applicant_name'][0].toUpperCase(),
-                                style: const TextStyle(color: Colors.white, fontSize: 20),
-                              ),
+        appBar: AppBar(
+          toolbarHeight: 0, // 🔥 hilangin bagian atas
+          bottom: const TabBar(
+            labelColor: Color(0xFF0077B5),
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Color(0xFF0077B5),
+            tabs: [
+              Tab(text: "Permintaan"),
+              Tab(text: "Riwayat"),
+            ],
+          ),
+        ),
+
+      body: TabBarView(
+        children: [
+          _buildPermintaanTab(),
+          _buildRiwayatTab(),
+        ],
+      ),
+    ),
+  );
+}
+
+// ================= TAB 1: PERMINTAAN =================
+Widget _buildPermintaanTab() {
+  return _isLoading
+      ? const Center(
+          child: CircularProgressIndicator(color: Color(0xFF0077B5)),
+        )
+      : RefreshIndicator(
+          onRefresh: _fetchApplicants,
+          color: const Color(0xFF0077B5),
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(8.0),
+            itemCount: _applicants.length,
+            itemBuilder: (context, index) {
+              final app = _applicants[index];
+              final title = app['post_title'] ?? '';
+
+              return Card(
+                color: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor: Colors.purple,
+                            child: Text(
+                              app['applicant_name'][0].toUpperCase(),
+                              style: const TextStyle(color: Colors.white, fontSize: 20),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    app['applicant_name'],
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                  ),
-                                  Text(
-                                    app['applicant_major'] ?? 'Mahasiswa',
-                                    style: const TextStyle(color: Colors.grey, fontSize: 13),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Mengajak koneksi dari postingan "${app['post_title']}"',
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16), // Jeda antara info dan tombol
-                        Row(
-                          children: [
-                            // Tombol Terima & WA
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  String noWa = app['applicant_no_wa'] ?? "";
-                                  if (noWa.startsWith('0')) noWa = '62${noWa.substring(1)}';
-                                  final Uri waUrl = Uri.parse("https://wa.me/$noWa");
-                                  try {
-                                    await launchUrl(waUrl, mode: LaunchMode.externalApplication);
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Gagal buka WhatsApp nih bro')),
-                                    );
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white, // Warna teks
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  app['applicant_name'],
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                 ),
-                                child: const Text('Terima & WA', style: TextStyle(fontWeight: FontWeight.bold)),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Tombol Liat Profil
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PublicProfileScreen(userId: app['applicant_id']),
+                                Text(
+                                  app['applicant_major'] ?? 'Mahasiswa',
+                                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                ),
+                                const SizedBox(height: 4),
+
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      expandedIndex.contains(index)
+                                          ? title
+                                          : (title.length > 50
+                                              ? title.substring(0, 50) + "..."
+                                              : title),
+                                      style: const TextStyle(fontSize: 13),
                                     ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF0077B5),
-                                  foregroundColor: Colors.white, // Warna teks
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    if (title.length > 50)
+                                      InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            if (expandedIndex.contains(index)) {
+                                              expandedIndex.remove(index);
+                                            } else {
+                                              expandedIndex.add(index);
+                                            }
+                                          });
+                                        },
+                                        child: Text(
+                                          expandedIndex.contains(index)
+                                              ? "Lihat lebih sedikit"
+                                              : "Lihat Selengkapnya",
+                                          style: const TextStyle(
+                                            color: Color(0xFF0077B5),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
-                                child: const Text('Liat Profil', style: TextStyle(fontWeight: FontWeight.bold)),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                String noWa = app['applicant_no_wa'] ?? "";
+                                if (noWa.startsWith('0')) {
+                                  noWa = '62${noWa.substring(1)}';
+                                }
+
+                                final Uri waUrl = Uri.parse("https://wa.me/$noWa");
+
+                                try {
+                                  await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Gagal buka WhatsApp')),
+                                  );
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Terima & WA'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => PublicProfileScreen(
+                                      userId: app['applicant_id'],
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0077B5),
+                                foregroundColor: Colors.white, 
+                              ),
+                              child: const Text('Lihat Profil'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                );
-              },
+                ),
+              );
+            },
+          ),
+        );
+}
+
+// ================= TAB 2: RIWAYAT =================
+Widget _buildRiwayatTab() {
+  return ListView.builder(
+    padding: const EdgeInsets.all(16),
+    itemCount: 5,
+    itemBuilder: (context, index) {
+      return Card(
+        child: ListTile(
+          leading: const CircleAvatar(child: Text("B")),
+          title: const Text("bbb"),
+          subtitle: const Text("Riwayat lamaran"),
+          trailing: Text(
+            index % 2 == 0 ? "Diterima" : "Ditolak",
+            style: TextStyle(
+              color: index % 2 == 0 ? Colors.green : Colors.red,
+              fontWeight: FontWeight.bold,
             ),
           ),
+        ),
+      );
+    },
   );
 }
 }

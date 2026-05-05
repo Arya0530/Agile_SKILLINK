@@ -33,6 +33,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
+          'ngrok-skip-browser-warning': 'true',
         },
       );
 
@@ -65,91 +66,142 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       return const Scaffold(body: Center(child: Text('Profil tidak ditemukan')));
     }
 
-    final skills = userData!['skills'] as List;
-    final projects = userData!['projects'] as List;
+    final skills = (userData?['skills'] as List?) ?? [];
+    final projects = (userData?['projects'] as List?) ?? [];
+    final name = userData?['name'] ?? 'Unknown';
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text('Profil ${userData!['name']}', style: const TextStyle(color: Colors.black, fontSize: 18)),
-        backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.black),
-        elevation: 1,
+  return Scaffold(
+    backgroundColor: Colors.white,
+    appBar: AppBar(
+      title: Text(
+        'Profil $name',
+        style: const TextStyle(color: Colors.black, fontSize: 18),
       ),
-      // --- MULAI REFRESH INDICATOR ---
-      body: RefreshIndicator(
-        onRefresh: _fetchProfile, // Tarik bawah buat panggil fungsi ini
-        color: const Color(0xFF0077B5),
-        child: SingleChildScrollView(
-          // AlwaysScrollableScrollPhysics wajib ada biar layar pendek pun bisa ditarik
-          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Profil
-              Center(
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 40, 
-                      backgroundColor: Colors.purple, 
-                      child: Text(
-                        userData!['name'][0].toUpperCase(), 
-                        style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)
-                      )
-                    ),
-                    const SizedBox(height: 12),
-                    Text(userData!['name'], style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                    Text(userData!['jurusan'] ?? 'Mahasiswa', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-              
-              // Bagian Keahlian (Skills)
-              const Text('Keahlian', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              skills.isEmpty 
-                ? const Text('Belum ada keahlian.', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
-                : Wrap(
-                    spacing: 8,
-                    children: skills.map((skill) => Chip(
-                      label: Text(skill['name']),
-                      backgroundColor: Colors.blue[50],
-                      side: BorderSide.none,
-                    )).toList(),
-                  ),
-              
-              const SizedBox(height: 24),
+      backgroundColor: Colors.white,
+      iconTheme: const IconThemeData(color: Colors.black),
+      elevation: 1,
+    ),
 
-              // Bagian Portofolio Proyek
-              const Text('Portofolio Proyek', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              projects.isEmpty 
-                ? const Text('Belum ada portofolio.', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
-                : Column(
-                    children: projects.map((project) => Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      color: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8), 
-                        side: BorderSide(color: Colors.grey.shade300)
-                      ),
-                      child: ListTile(
-                        title: Text(project['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(project['description'], maxLines: 2, overflow: TextOverflow.ellipsis),
-                      ),
-                    )).toList(),
+    body: RefreshIndicator(
+      onRefresh: _fetchProfile,
+      color: const Color(0xFF0077B5),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Profil
+            Center(
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 40, 
+                    backgroundColor: Colors.purple, 
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                      style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                    ),
                   ),
-              
-              // Tambahkan extra space di bawah biar scrolling terasa lega
-              const SizedBox(height: 50),
-            ],
-          ),
+                  const SizedBox(height: 12),
+                  Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  Text(userData?['jurusan'] ?? 'Mahasiswa', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+            
+            // Bagian Keahlian (Skills)
+            const Text('Keahlian', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            skills.isEmpty 
+              ? const Text('Belum ada keahlian.', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
+              : Wrap(
+                  spacing: 8,
+                  children: skills.map<Widget>((skill) => Chip(
+                    label: Text(skill['name'] ?? 'Unknown'),
+                    backgroundColor: Colors.blue[50],
+                    side: BorderSide.none,
+                  )).toList(),
+                ),
+            
+            const SizedBox(height: 24),
+
+            // Bagian Portofolio Proyek
+            const Text('Portofolio Proyek', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            projects.isEmpty 
+              ? const Text('Belum ada portofolio.', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
+              : Column(
+                  children: projects.map((project) => Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    color: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8), 
+                      side: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    child: ListTile(
+                      title: Text(project['title'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text(project['description'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
+                    ),
+                  )).toList(),
+                ),
+            
+            // Tambahkan extra space di bawah biar scrolling terasa lega
+            const SizedBox(height: 50),
+          ],
         ),
       ),
-    );
-  }
+    ),
+    bottomNavigationBar: Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: Colors.grey.shade300, blurRadius: 5),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+           backgroundColor: Colors.red,
+           foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: () {
+                print("Ditolak!");
+              },
+              child: const Text(
+                "Tolak",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: () {
+                print("Diterima!");
+              },
+              child: const Text(
+                "Terima",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+ }
 }

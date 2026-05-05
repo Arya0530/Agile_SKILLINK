@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'edit_profile_screen.dart';
 import 'login_screen.dart';
 import 'api_config.dart';
+import 'edit_skill_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -33,13 +34,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _fetchProfileData(); 
   }
 
-  Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _name = prefs.getString('user_name') ?? 'Nama Belum Diatur';
-      _major = prefs.getString('user_major') ?? 'Jurusan Belum Diatur';
-    });
-  }
+Future<void> _loadUserData() async {
+  final prefs = await SharedPreferences.getInstance();
+  setState(() {
+    _name = prefs.getString('user_name') ?? 'Nama Belum Diatur';
+    _major = prefs.getString('user_major') ?? 'Jurusan Belum Diatur';
+  });
+}
 
   Future<void> _fetchProfileData() async {
     // Kita tidak pakai _isLoading = true di sini agar saat pull-to-refresh
@@ -51,13 +52,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (token == null) return;
 
       final response = await http.get(
+        
         Uri.parse('${ApiConfig.baseUrl}/profile'),
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
+          'ngrok-skip-browser-warning': 'true',
         },
       );
-
+debugPrint(response.body);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
@@ -111,36 +114,119 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(16.0),
             children: [
               // --- Bagian Header Profil ---
-              Center(
-                child: Column(
-                  children: [
-                    const CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Color(0xFF0077B5),
-                      child: Icon(Icons.person, size: 50, color: Colors.white),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(_name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(_major, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const EditProfileScreen()),
-                        );
-                        _fetchProfileData(); // Refresh pas balik dari edit
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0077B5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      child: const Text('Edit Profil', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ),
+// --- Bagian Header Profil ---
+Center(
+  child: Column(
+    children: [
+      const CircleAvatar(
+        radius: 50,
+        backgroundColor: Color(0xFF0077B5),
+        child: Icon(Icons.person, size: 50, color: Colors.white),
+      ),
+      const SizedBox(height: 16),
+      Text(_name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 4),
+      Text(_major, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+      const SizedBox(height: 16),
+
+Row(
+  children: [
+    // --- TOMBOL 1: EDIT PROFIL (Normal Biru, Hover Putih) ---
+    Expanded(
+      child: ElevatedButton(
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+          );
+          _fetchProfileData();
+        },
+        style: ButtonStyle(
+          elevation: MaterialStateProperty.all(0), 
+          shape: MaterialStateProperty.all(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+          ),
+          side: MaterialStateProperty.all(
+            const BorderSide(color: Color(0xFF0077B5), width: 1.5) 
+          ),
+          // Background: Normal = Biru, Hover = Putih
+          backgroundColor: MaterialStateProperty.resolveWith<Color>(
+            (Set<MaterialState> states) {
+              if (states.contains(MaterialState.hovered)) {
+                return Colors.white; 
+              }
+              return const Color(0xFF0077B5); 
+            },
+          ),
+          // Teks: Normal = Putih, Hover = Biru
+          foregroundColor: MaterialStateProperty.resolveWith<Color>(
+            (Set<MaterialState> states) {
+              if (states.contains(MaterialState.hovered)) {
+                return const Color(0xFF0077B5); 
+              }
+              return Colors.white; 
+            },
+          ),
+        ),
+        child: const Text(
+          'EDIT PROFIL', 
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)
+        ),
+      ),
+    ),
+    
+    const SizedBox(width: 10),
+    
+    // --- TOMBOL 2: EDIT SKILL (Normal Biru, Hover Putih) ---
+    Expanded(
+      child: ElevatedButton(
+onPressed: () async {
+  // Tunggu user ngedit-ngedit di halaman Edit Skill
+  await Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const EditSkillScreen()),
+  );
+  // Pas user mencet tombol Back, otomatis tarik data terbaru dari Laragon
+  _fetchProfileData();
+},
+        style: ButtonStyle(
+          elevation: MaterialStateProperty.all(0), 
+          shape: MaterialStateProperty.all(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+          ),
+          side: MaterialStateProperty.all(
+            const BorderSide(color: Color(0xFF0077B5), width: 1.5)
+          ),
+          // Background: Normal = Biru, Hover = Putih
+          backgroundColor: MaterialStateProperty.resolveWith<Color>(
+            (Set<MaterialState> states) {
+              if (states.contains(MaterialState.hovered)) {
+                return Colors.white; 
+              }
+              return const Color(0xFF0077B5); 
+            },
+          ),
+          // Teks: Normal = Putih, Hover = Biru
+          foregroundColor: MaterialStateProperty.resolveWith<Color>(
+            (Set<MaterialState> states) {
+              if (states.contains(MaterialState.hovered)) {
+                return const Color(0xFF0077B5); 
+              }
+              return Colors.white; 
+            },
+          ),
+        ),
+        child: const Text(
+          'EDIT SKILL',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        ),
+      ),
+    ),
+  ],
+),
+    ],
+  ),
+),
               const Divider(height: 40, thickness: 1),
 
               // --- Bagian Skill Badges ---
@@ -191,27 +277,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProjectCard({required int id, required String title, required String role, required String description}) {
-    return GestureDetector(
-      onLongPress: () => _deleteItem('projects', id),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 4, spreadRadius: 1)],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(role, style: const TextStyle(fontSize: 14, color: Colors.orange, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(description, style: const TextStyle(fontSize: 14, color: Colors.black87)),
-          ],
-        ),
+Widget _buildProjectCard({required int id, required String title, required String role, required String description}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10), // Bikin sudut melengkung
+        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4, spreadRadius: 1)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+              // --- INI DIA TOMBOL TITIK 3 NYA ---
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.more_vert, color: Colors.grey),
+                onSelected: (value) {
+                    if (value == 'edit') {
+                      // Arahin ke halaman Edit Profil
+                      Navigator.push(
+                        context, 
+                        MaterialPageRoute(builder: (context) => const EditSkillScreen())
+                      );
+                    } else if (value == 'delete') {
+                      _deleteItem('projects', id);
+                    }
+                  },
+                itemBuilder: (BuildContext context) => [
+                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  const PopupMenuItem(value: 'delete', child: Text('Hapus', style: TextStyle(color: Colors.red))),
+                ],
+              ),
+            ],
+          ),
+          // const SizedBox(height: 2), <-- Diubah dikit biar teks role lebih rapi
+          Text(role, style: const TextStyle(fontSize: 14, color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(description, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+        ],
       ),
     );
   }

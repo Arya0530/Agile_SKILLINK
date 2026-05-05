@@ -34,6 +34,7 @@ Future<void> submitPost() async {
           'Accept': 'application/json',
           // 👇 TUNJUKIN KTP-NYA KE SATPAM LARAVEL DI SINI
           'Authorization': 'Bearer $token', 
+          'ngrok-skip-browser-warning': 'true',
         },
         body: {
           'author_name': namaUser,
