@@ -24,10 +24,6 @@ MAIL_FROM_ADDRESS=skillinkappadmin@gmail.com
 MAIL_FROM_NAME="SKILLINK"
 ```
 
-> Gunakan App Password Gmail, bukan password Gmail asli.
-
----
-
 # 2. Setup APP_URL
 
 Masih di file `.env`, ubah bagian:
