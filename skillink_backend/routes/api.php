@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ForgotPasswordController;
 
 // Bikin URL API: localhost:8000/api/posts
 Route::get('/posts', [PostController::class, 'index']);
@@ -11,6 +12,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 // Rute reset password
 Route::post('/reset-password-direct', [AuthController::class, 'resetPasswordDirect']);
+Route::post('/forgot-password', [ForgotPasswordController::class, 'forgot']);
 
 // Rute-rute yang WAJIB LOGIN (Dilindungi Satpam Sanctum)
 Route::middleware('auth:sanctum')->group(function () {

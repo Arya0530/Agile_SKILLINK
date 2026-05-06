@@ -93,38 +93,37 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // --- FUNGSI BUAT LUPA PASSWORD ---
+  // FUNGSI RESET PASSWORD
   void showResetDialog() {
-    TextEditingController newPasswordController = TextEditingController();
+    TextEditingController emailController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Reset Password"),
+          title: const Text("Forgot Password"),
           content: TextField(
-            controller: newPasswordController,
-            obscureText: true,
-            decoration: const InputDecoration(labelText: "Password Baru"),
+            controller: emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(labelText: "Masukkan Email"),
           ),
           actions: [
             TextButton(
               onPressed: () async {
                 final response = await http.post(
-                  Uri.parse('${ApiConfig.baseUrl}/reset-password-direct'),
-                  body: {
-                    "email": _emailController.text,
-                    "password": newPasswordController.text,
-                  },
+                  Uri.parse('${ApiConfig.baseUrl}/forgot-password'),
+                  body: {"email": emailController.text},
                 );
 
                 Navigator.pop(context);
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Password berhasil direset")),
+                  const SnackBar(
+                    content: Text("Link reset password telah dikirim ke email"),
+                  ),
                 );
               },
-              child: const Text("Reset"),
+              child: const Text("Kirim"),
             ),
           ],
         );
