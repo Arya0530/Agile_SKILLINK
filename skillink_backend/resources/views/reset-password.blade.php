@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Reset Password - SKILLINK</title>
 
     <style>
@@ -15,24 +16,62 @@
         }
 
         body{
-            background:#f3f2ef;
+            min-height:100vh;
+            background:#f4f7fb;
+            overflow:hidden;
+            position:relative;
             display:flex;
             justify-content:center;
             align-items:center;
-            min-height:100vh;
             padding:20px;
+        }
+
+        /* DEKORASI BULATAN */
+        .circle-top{
+            position:absolute;
+            width:300px;
+            height:300px;
+            background:rgba(0,119,181,0.08);
+            border-radius:50%;
+            top:-120px;
+            right:-100px;
+        }
+
+        .circle-bottom{
+            position:absolute;
+            width:280px;
+            height:280px;
+            background:rgba(0,119,181,0.05);
+            border-radius:50%;
+            bottom:-120px;
+            left:-100px;
         }
 
         .container{
             width:100%;
-            max-width:400px;
+            max-width:420px;
+            position:relative;
+            z-index:2;
+        }
+
+        .icon-box{
+            width:95px;
+            height:95px;
+            border-radius:50%;
+            background:rgba(0,119,181,0.1);
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            margin:0 auto 28px auto;
+            font-size:42px;
+            color:#0077B5;
         }
 
         .card{
             background:white;
-            border-radius:18px;
-            padding:32px 24px;
-            box-shadow:0 4px 20px rgba(0,0,0,0.08);
+            border-radius:24px;
+            padding:34px 26px;
+            box-shadow:0 12px 30px rgba(0,0,0,0.08);
         }
 
         .logo{
@@ -46,8 +85,9 @@
         .subtitle{
             text-align:center;
             color:#666;
-            font-size:14px;
-            margin-bottom:30px;
+            font-size:15px;
+            line-height:1.6;
+            margin-bottom:34px;
         }
 
         .input-group{
@@ -58,62 +98,70 @@
             display:block;
             margin-bottom:8px;
             font-size:14px;
-            color:#444;
             font-weight:600;
+            color:#444;
         }
 
         .input-group input{
             width:100%;
-            padding:14px;
-            border:1px solid #dcdcdc;
-            border-radius:12px;
+            padding:15px;
+            border:none;
+            border-radius:14px;
+            background:#f7f9fc;
             font-size:15px;
             outline:none;
             transition:0.2s;
         }
 
         .input-group input:focus{
-            border-color:#0077B5;
-            box-shadow:0 0 0 3px rgba(0,119,181,0.15);
+            border:2px solid #0077B5;
+            background:white;
+            box-shadow:0 0 0 4px rgba(0,119,181,0.12);
         }
 
         .email-box{
-            background:#f7f7f7;
             color:#666;
         }
 
         .btn{
             width:100%;
-            padding:14px;
+            padding:15px;
             border:none;
-            border-radius:12px;
+            border-radius:14px;
             background:#0077B5;
             color:white;
             font-size:16px;
             font-weight:bold;
             cursor:pointer;
             transition:0.2s;
+            margin-top:10px;
         }
 
         .btn:hover{
-            opacity:0.9;
+            opacity:0.92;
+            transform:translateY(-1px);
         }
 
         .footer{
             text-align:center;
-            margin-top:20px;
-            font-size:13px;
+            margin-top:22px;
+            font-size:12px;
             color:#888;
         }
 
         @media(max-width:480px){
 
             .card{
-                padding:28px 20px;
+                padding:28px 22px;
+                border-radius:20px;
             }
 
             .logo{
                 font-size:30px;
+            }
+
+            .subtitle{
+                font-size:14px;
             }
 
         }
@@ -123,70 +171,88 @@
 
 <body>
 
-<div class="container">
+    <!-- DEKORASI -->
+    <div class="circle-top"></div>
+    <div class="circle-bottom"></div>
 
-    <div class="card">
+    <div class="container">
 
-        <div class="logo">
-            SKILLINK
+        <div class="icon-box">
+            🔒
         </div>
 
-        <div class="subtitle">
-            Buat password baru untuk akun kamu
-        </div>
+        <div class="card">
 
-        <form method="POST" action="{{ url('/reset-password') }}">
-            @csrf
-
-            <input type="hidden" name="token" value="{{ $token }}">
-
-            <div class="input-group">
-                <label>Email</label>
-
-                <input
-                    type="email"
-                    name="email"
-                    value="{{ request()->email }}"
-                    readonly
-                    class="email-box"
-                >
+            <div class="logo">
+                SKILLINK
             </div>
 
-            <div class="input-group">
-                <label>Password Baru</label>
-
-                <input
-                    type="password"
-                    name="password"
-                    placeholder="Masukkan password baru"
-                    required
-                >
+            <div class="subtitle">
+                Buat password baru untuk akun kamu dan lanjutkan kolaborasi tanpa drama lupa password lagi.
             </div>
 
-            <div class="input-group">
-                <label>Konfirmasi Password</label>
+            <form method="POST" action="{{ url('/reset-password') }}">
+                @csrf
 
                 <input
-                    type="password"
-                    name="password_confirmation"
-                    placeholder="Ulangi password baru"
-                    required
+                    type="hidden"
+                    name="token"
+                    value="{{ $token }}"
                 >
+
+                <div class="input-group">
+
+                    <label>Email</label>
+
+                    <input
+                        type="email"
+                        name="email"
+                        value="{{ request()->email }}"
+                        readonly
+                        class="email-box"
+                    >
+
+                </div>
+
+                <div class="input-group">
+
+                    <label>Password Baru</label>
+
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="Masukkan password baru"
+                        required
+                    >
+
+                </div>
+
+                <div class="input-group">
+
+                    <label>Konfirmasi Password</label>
+
+                    <input
+                        type="password"
+                        name="password_confirmation"
+                        placeholder="Ulangi password baru"
+                        required
+                    >
+
+                </div>
+
+                <button type="submit" class="btn">
+                    Reset Password
+                </button>
+
+            </form>
+
+            <div class="footer">
+                © SKILLINK 2026
             </div>
 
-            <button type="submit" class="btn">
-                Reset Password
-            </button>
-
-        </form>
-
-        <div class="footer">
-            © SKILLINK
         </div>
 
     </div>
-
-</div>
 
 </body>
 </html>
