@@ -16,15 +16,29 @@ Route::post('/forgot-password', [ForgotPasswordController::class, 'forgot']);
 
 // Rute-rute yang WAJIB LOGIN (Dilindungi Satpam Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
-Route::delete('/profile/skills/{id}', [ProfileController::class, 'deleteSkill']);
-Route::delete('/profile/projects/{id}', [ProfileController::class, 'deleteProject']);
-Route::post('/posts/{id}/apply', [PostController::class, 'apply']);
-Route::get('/my-applicants', [PostController::class, 'getMyApplicants']);
-Route::post('/posts', [App\Http\Controllers\PostController::class, 'store']);
-Route::delete('/posts/{id}', [PostController::class, 'destroy']);
-Route::put('/posts/{id}', [PostController::class, 'update']);
-// Rute jalan pintas buat ngintip profil orang + skill + project-nya
-Route::get('/users/{id}/profile', function($id) {
+    Route::delete('/profile/skills/{id}', [ProfileController::class, 'deleteSkill']);
+    Route::delete('/profile/projects/{id}', [ProfileController::class, 'deleteProject']);
+    Route::post('/posts/{id}/apply', [PostController::class, 'apply']);
+    Route::get('/my-applicants', [PostController::class, 'getMyApplicants']);
+    Route::post('/posts', [App\Http\Controllers\PostController::class, 'store']);
+    Route::delete('/posts/{id}', [PostController::class, 'destroy']);
+    Route::put('/posts/{id}', [PostController::class, 'update']);
+
+    // [BARU] Accept atau Reject lamaran (untuk pemilik post)
+    // PUT /api/applications/{id}/status
+    // Body: { "status": "accepted" } atau { "status": "rejected" }
+    Route::put('/applications/{id}/status', [PostController::class, 'updateApplicationStatus']);
+
+    // [BARU] Ambil history lamaran milik user yang lagi login (untuk pelamar)
+    // GET /api/my-application-history
+    Route::get('/my-application-history', [PostController::class, 'getMyApplicationHistory']);
+
+    // [BARU] History keputusan pemilik post (acc/reject yang sudah dilakukan)
+    // GET /api/my-decision-history
+    Route::get('/my-decision-history', [PostController::class, 'getMyDecisionHistory']);
+
+    // Rute jalan pintas buat ngintip profil orang + skill + project-nya
+    Route::get('/users/{id}/profile', function($id) {
         $user = \App\Models\User::with(['skills', 'projects'])->find($id);
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'User nggak ketemu'], 404);
@@ -36,5 +50,4 @@ Route::get('/users/{id}/profile', function($id) {
     Route::get('/profile', [ProfileController::class, 'getProfile']);
     Route::post('/profile/skills', [ProfileController::class, 'addSkill']);
     Route::post('/profile/projects', [ProfileController::class, 'addProject']);
-
 });
