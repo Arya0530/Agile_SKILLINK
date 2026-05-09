@@ -35,9 +35,6 @@ class _NetworkScreenState extends State<NetworkScreen> {
     _fetchDecisionHistory();
   }
 
-  // ----------------------------------------------------------------
-  // Tarik data siapa aja yang ngelamar project lu (hanya status pending)
-  // ----------------------------------------------------------------
   Future<void> _fetchApplicants() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('user_token');
@@ -52,28 +49,18 @@ class _NetworkScreenState extends State<NetworkScreen> {
         },
       );
 
-      debugPrint("STATUS JARINGAN: ${response.statusCode}");
-      debugPrint("BALASAN JARINGAN: ${response.body}");
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (!mounted) return;
-        setState(() {
-          _applicants = data['data'];
-        });
+        setState(() => _applicants = data['data']);
       }
     } catch (e) {
       debugPrint("Gagal narik data pelamar: $e");
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // ----------------------------------------------------------------
-  // Tarik history lamaran milik user yang login (accepted / rejected)
-  // ----------------------------------------------------------------
   Future<void> _fetchHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('user_token');
@@ -88,28 +75,18 @@ class _NetworkScreenState extends State<NetworkScreen> {
         },
       );
 
-      debugPrint("STATUS HISTORY: ${response.statusCode}");
-      debugPrint("BALASAN HISTORY: ${response.body}");
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (!mounted) return;
-        setState(() {
-          _history = data['data'];
-        });
+        setState(() => _history = data['data']);
       }
     } catch (e) {
       debugPrint("Gagal narik history: $e");
     } finally {
-      if (mounted) {
-        setState(() => _isLoadingHistory = false);
-      }
+      if (mounted) setState(() => _isLoadingHistory = false);
     }
   }
 
-  // ----------------------------------------------------------------
-  // Tarik history keputusan pemilik post (acc/reject yang sudah dilakukan)
-  // ----------------------------------------------------------------
   Future<void> _fetchDecisionHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('user_token');
@@ -124,32 +101,23 @@ class _NetworkScreenState extends State<NetworkScreen> {
         },
       );
 
-      debugPrint("STATUS DECISION HISTORY: ${response.statusCode}");
-      debugPrint("BALASAN DECISION HISTORY: ${response.body}");
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (!mounted) return;
-        setState(() {
-          _decisionHistory = data['data'];
-        });
+        setState(() => _decisionHistory = data['data']);
       }
     } catch (e) {
       debugPrint("Gagal narik decision history: $e");
     } finally {
-      if (mounted) {
-        setState(() => _isLoadingDecision = false);
-      }
+      if (mounted) setState(() => _isLoadingDecision = false);
     }
   }
 
-  // ---------------------------------------------------------------- lalu hapus dari list Permintaan
-  // ----------------------------------------------------------------
   Future<void> _updateApplicationStatus({
     required int applicationId,
-    required String status, // 'accepted' atau 'rejected'
+    required String status,
     required int index,
-    String? noWa, // hanya dipakai saat accept
+    String? noWa,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('user_token');
@@ -166,23 +134,19 @@ class _NetworkScreenState extends State<NetworkScreen> {
         body: json.encode({'status': status}),
       );
 
-      debugPrint("STATUS UPDATE: ${response.statusCode}");
-      debugPrint("BALASAN UPDATE: ${response.body}");
-
       if (response.statusCode == 200) {
-        // Hapus dari list Permintaan supaya langsung hilang di UI
         if (!mounted) return;
         setState(() {
           _applicants.removeAt(index);
-          // Reset expanded index supaya tidak kacak setelah item dihapus
           expandedIndex.clear();
         });
 
-        // Refresh history supaya langsung muncul di tab Riwayat
+        // Refresh kedua history sekaligus supaya rejected_auto langsung muncul
         _fetchHistory();
         _fetchDecisionHistory();
+        // Refresh tab permintaan juga biar sisa pelamar ter-update
+        _fetchApplicants();
 
-        // Kalau accept, buka WhatsApp setelah API berhasil
         if (status == 'accepted' && noWa != null && noWa.isNotEmpty) {
           String formattedWa = noWa;
           if (formattedWa.startsWith('0')) {
@@ -194,20 +158,21 @@ class _NetworkScreenState extends State<NetworkScreen> {
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Lamaran diterima, tapi gagal buka WhatsApp')),
+                const SnackBar(
+                    content:
+                        Text('Lamaran diterima, tapi gagal buka WhatsApp')),
               );
             }
           }
         } else {
-          // Tampilkan snackbar konfirmasi
           if (mounted) {
-            final msg = status == 'accepted'
-                ? 'Lamaran diterima!'
-                : 'Lamaran ditolak.';
+            final msg =
+                status == 'accepted' ? 'Lamaran diterima!' : 'Lamaran ditolak.';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(msg),
-                backgroundColor: status == 'accepted' ? Colors.green : Colors.red,
+                backgroundColor:
+                    status == 'accepted' ? Colors.green : Colors.red,
               ),
             );
           }
@@ -215,7 +180,9 @@ class _NetworkScreenState extends State<NetworkScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Gagal memperbarui status lamaran, coba lagi.')),
+            const SnackBar(
+                content:
+                    Text('Gagal memperbarui status lamaran, coba lagi.')),
           );
         }
       }
@@ -282,6 +249,13 @@ class _NetworkScreenState extends State<NetworkScreen> {
                       final title = app['post_title'] ?? '';
                       final applicationId = app['application_id'] as int;
 
+                      // ===== [BARU] Data kuota dari API =====
+                      final int maxAnggota =
+                          (app['max_anggota'] ?? 0) as int;
+                      final int acceptedCount =
+                          (app['accepted_count'] ?? 0) as int;
+                      final bool adaKuota = maxAnggota > 0;
+
                       return Card(
                         color: Colors.white,
                         elevation: 0,
@@ -332,8 +306,8 @@ class _NetworkScreenState extends State<NetworkScreen> {
                                                   : (title.length > 50
                                                       ? '${title.substring(0, 50)}...'
                                                       : title),
-                                              style: const TextStyle(
-                                                  fontSize: 13),
+                                              style:
+                                                  const TextStyle(fontSize: 13),
                                             ),
                                             if (title.length > 50)
                                               InkWell(
@@ -361,6 +335,28 @@ class _NetworkScreenState extends State<NetworkScreen> {
                                               ),
                                           ],
                                         ),
+                                        // ===== [BARU] Counter kuota di kartu pelamar =====
+                                        if (adaKuota) ...[
+                                          const SizedBox(height: 6),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.group,
+                                                size: 14,
+                                                color: Colors.orange.shade700,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'Slot terisi: $acceptedCount/$maxAnggota',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.orange.shade700,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
@@ -372,7 +368,6 @@ class _NetworkScreenState extends State<NetworkScreen> {
                               // ===== TOMBOL AKSI =====
                               Row(
                                 children: [
-                                  // [DIUPDATE] Tombol Terima — panggil API accept dulu, baru buka WA
                                   Expanded(
                                     child: ElevatedButton.icon(
                                       onPressed: () {
@@ -392,15 +387,14 @@ class _NetworkScreenState extends State<NetworkScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-
-                                  // [BARU] Tombol Tolak — panggil API reject
                                   Expanded(
                                     child: ElevatedButton.icon(
                                       onPressed: () {
                                         showDialog(
                                           context: context,
                                           builder: (ctx) => AlertDialog(
-                                            title: const Text('Tolak Lamaran'),
+                                            title:
+                                                const Text('Tolak Lamaran'),
                                             content: Text(
                                               'Yakin mau nolak lamaran dari ${app['applicant_name']}?',
                                             ),
@@ -438,8 +432,6 @@ class _NetworkScreenState extends State<NetworkScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-
-                                  // Tombol Lihat Profil
                                   ElevatedButton(
                                     onPressed: () {
                                       Navigator.push(
@@ -453,7 +445,8 @@ class _NetworkScreenState extends State<NetworkScreen> {
                                       );
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF0077B5),
+                                      backgroundColor:
+                                          const Color(0xFF0077B5),
                                       foregroundColor: Colors.white,
                                     ),
                                     child: const Text('Profil'),
@@ -470,8 +463,6 @@ class _NetworkScreenState extends State<NetworkScreen> {
   }
 
   // ================= TAB 2: RIWAYAT =================
-  // Seksi 1: Lamaran Saya (sebagai pelamar)
-  // Seksi 2: Keputusan Saya (sebagai pemilik post, ada tombol WA kalau accepted)
   Widget _buildRiwayatTab() {
     final isLoading = _isLoadingHistory || _isLoadingDecision;
 
@@ -492,11 +483,15 @@ class _NetworkScreenState extends State<NetworkScreen> {
                 _buildSectionHeader('📨 Lamaran Saya'),
                 const SizedBox(height: 8),
                 if (_history.isEmpty)
-                  _buildEmptyState('Belum ada riwayat lamaran yang kamu kirim.')
+                  _buildEmptyState(
+                      'Belum ada riwayat lamaran yang kamu kirim.')
                 else
                   ..._history.map((item) {
                     final status = item['status'] as String;
-                    final isDiterima = status == 'accepted';
+                    // Pakai status_label dari API yang sudah disiapkan backend
+                    final statusLabel =
+                        item['status_label'] as String? ?? status;
+
                     return Card(
                       color: Colors.white,
                       elevation: 0,
@@ -508,12 +503,11 @@ class _NetworkScreenState extends State<NetworkScreen> {
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 8),
                         leading: CircleAvatar(
-                          backgroundColor: isDiterima
-                              ? Colors.green.shade100
-                              : Colors.red.shade100,
+                          backgroundColor:
+                              _statusAvatarBg(status),
                           child: Icon(
-                            isDiterima ? Icons.check_circle : Icons.cancel,
-                            color: isDiterima ? Colors.green : Colors.red,
+                            _statusIcon(status),
+                            color: _statusColor(status),
                           ),
                         ),
                         title: Text(
@@ -539,7 +533,8 @@ class _NetworkScreenState extends State<NetworkScreen> {
                             ),
                           ],
                         ),
-                        trailing: _buildStatusBadge(isDiterima),
+                        // ===== [DIUPDATE] Badge pakai status string =====
+                        trailing: _buildStatusBadgeByStatus(status, statusLabel),
                       ),
                     );
                   }),
@@ -554,6 +549,8 @@ class _NetworkScreenState extends State<NetworkScreen> {
                 else
                   ..._decisionHistory.map((item) {
                     final status = item['status'] as String;
+                    final statusLabel =
+                        item['status_label'] as String? ?? status;
                     final isDiterima = status == 'accepted';
                     final noWa = item['applicant_no_wa'] as String?;
 
@@ -571,16 +568,12 @@ class _NetworkScreenState extends State<NetworkScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             CircleAvatar(
-                              backgroundColor: isDiterima
-                                  ? Colors.green.shade100
-                                  : Colors.red.shade100,
+                              backgroundColor: _statusAvatarBg(status),
                               child: Text(
                                 (item['applicant_name'] ?? '?')[0]
                                     .toUpperCase(),
                                 style: TextStyle(
-                                  color: isDiterima
-                                      ? Colors.green.shade700
-                                      : Colors.red.shade700,
+                                  color: _statusColor(status),
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -617,9 +610,9 @@ class _NetworkScreenState extends State<NetworkScreen> {
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
-                                      _buildStatusBadge(isDiterima),
+                                      _buildStatusBadgeByStatus(
+                                          status, statusLabel),
                                       const SizedBox(width: 8),
-                                      // Tombol WA hanya muncul kalau status accepted
                                       if (isDiterima &&
                                           noWa != null &&
                                           noWa.isNotEmpty)
@@ -692,7 +685,90 @@ class _NetworkScreenState extends State<NetworkScreen> {
           );
   }
 
-  // ---- Helper widgets ----
+  // ---- Helper: tentukan warna, ikon, bg berdasarkan status string ----
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'accepted':
+        return Colors.green;
+      case 'rejected_auto':
+        return Colors.orange.shade700;
+      default: // 'rejected'
+        return Colors.red;
+    }
+  }
+
+  Color _statusAvatarBg(String status) {
+    switch (status) {
+      case 'accepted':
+        return Colors.green.shade100;
+      case 'rejected_auto':
+        return Colors.orange.shade100;
+      default:
+        return Colors.red.shade100;
+    }
+  }
+
+  IconData _statusIcon(String status) {
+    switch (status) {
+      case 'accepted':
+        return Icons.check_circle;
+      case 'rejected_auto':
+        return Icons.block;
+      default:
+        return Icons.cancel;
+    }
+  }
+
+  // ===== [DIUPDATE] Badge sekarang pakai string status + label =====
+  Widget _buildStatusBadgeByStatus(String status, String label) {
+    Color bgColor;
+    Color borderColor;
+    Color textColor;
+
+    switch (status) {
+      case 'accepted':
+        bgColor = Colors.green.shade50;
+        borderColor = Colors.green;
+        textColor = Colors.green;
+        break;
+      case 'rejected_auto':
+        bgColor = Colors.orange.shade50;
+        borderColor = Colors.orange.shade700;
+        textColor = Colors.orange.shade700;
+        break;
+      default: // 'rejected'
+        bgColor = Colors.red.shade50;
+        borderColor = Colors.red;
+        textColor = Colors.red;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  // Tetap ada untuk backward-compat kalau ada yang masih pakai
+  Widget _buildStatusBadge(bool isDiterima) {
+    return _buildStatusBadgeByStatus(
+      isDiterima ? 'accepted' : 'rejected',
+      isDiterima ? 'Diterima' : 'Ditolak',
+    );
+  }
+
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
@@ -710,28 +786,6 @@ class _NetworkScreenState extends State<NetworkScreen> {
       child: Text(
         message,
         style: const TextStyle(color: Colors.grey, fontSize: 13),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(bool isDiterima) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDiterima ? Colors.green.shade50 : Colors.red.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDiterima ? Colors.green : Colors.red,
-          width: 1,
-        ),
-      ),
-      child: Text(
-        isDiterima ? 'Diterima' : 'Ditolak',
-        style: TextStyle(
-          color: isDiterima ? Colors.green : Colors.red,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-        ),
       ),
     );
   }

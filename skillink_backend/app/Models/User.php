@@ -7,16 +7,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Auth\Passwords\CanResetPassword;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, CanResetPassword;
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
      */
     protected $fillable = [
         'name',
@@ -28,8 +25,6 @@ class User extends Authenticatable
 
     /**
      * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
      */
     protected $hidden = [
         'password',
@@ -38,38 +33,44 @@ class User extends Authenticatable
 
     /**
      * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
 
-    // Relasi ke tabel skills
-    public function skills()
+    // ─── RELASI ───────────────────────────────────────────────────────────────
+
+    // Postingan yang dibuat user ini
+    public function posts()
     {
-        return $this->hasMany(Skill::class);
+        return $this->hasMany(Post::class);
     }
 
-    // Relasi ke tabel projects
-    public function projects()
-    {
-        return $this->hasMany(Project::class);
-    }
-
-    // Relasi ke tabel applications
+    // Lamaran yang dikirim user ini
     public function applications()
     {
         return $this->hasMany(Application::class);
     }
 
-    // Relasi ke tabel posts
-    public function posts()
+    // Skill yang dimiliki user ini
+    public function skills()
     {
-        return $this->hasMany(Post::class);
+        return $this->hasMany(Skill::class);
+    }
+
+    // Proyek manual yang ditambahkan user ini (entry manual)
+    public function projects()
+    {
+        return $this->hasMany(Project::class);
+    }
+
+    // [BARU] Portofolio otomatis dari proyek yang selesai
+    public function projectHistories()
+    {
+        return $this->hasMany(ProjectHistory::class)->latest();
     }
 }

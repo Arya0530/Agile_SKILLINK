@@ -6,48 +6,52 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ForgotPasswordController;
 
-// Bikin URL API: localhost:8000/api/posts
+// ─── PUBLIC ROUTES ────────────────────────────────────────────────────────────
+
+// For You feed — hanya tampilkan post aktif (is_closed=false, is_completed=false)
 Route::get('/posts', [PostController::class, 'index']);
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-// Rute reset password
 Route::post('/reset-password-direct', [AuthController::class, 'resetPasswordDirect']);
 Route::post('/forgot-password', [ForgotPasswordController::class, 'forgot']);
 
-// Rute-rute yang WAJIB LOGIN (Dilindungi Satpam Sanctum)
+// ─── PROTECTED ROUTES (Wajib Login) ──────────────────────────────────────────
+
 Route::middleware('auth:sanctum')->group(function () {
+
+    // ── Profile ───────────────────────────────────────────────────────────────
+    Route::get('/profile', [ProfileController::class, 'getProfile']);
+    Route::post('/profile/skills', [ProfileController::class, 'addSkill']);
     Route::delete('/profile/skills/{id}', [ProfileController::class, 'deleteSkill']);
+    Route::post('/profile/projects', [ProfileController::class, 'addProject']);
     Route::delete('/profile/projects/{id}', [ProfileController::class, 'deleteProject']);
+
+    // ── Posts ─────────────────────────────────────────────────────────────────
+    Route::get('/my-posts', [PostController::class, 'myPosts']);
+    Route::post('/posts', [PostController::class, 'store']);
+    Route::put('/posts/{id}', [PostController::class, 'update']);
+    Route::delete('/posts/{id}', [PostController::class, 'destroy']);
+
+    // [BARU] Tutup Rekrutmen — post hilang dari For You, label "Ditutup" di My Post
+    Route::put('/posts/{id}/close', [PostController::class, 'closeRecruitment']);
+
+    // [BARU] Proyek Selesai — label berubah + auto-buat project history semua anggota
+    Route::put('/posts/{id}/complete', [PostController::class, 'completeProject']);
+
+    // ── Applications ──────────────────────────────────────────────────────────
     Route::post('/posts/{id}/apply', [PostController::class, 'apply']);
     Route::get('/my-applicants', [PostController::class, 'getMyApplicants']);
-    Route::post('/posts', [App\Http\Controllers\PostController::class, 'store']);
-    Route::delete('/posts/{id}', [PostController::class, 'destroy']);
-    Route::put('/posts/{id}', [PostController::class, 'update']);
-
-    // [BARU] Accept atau Reject lamaran (untuk pemilik post)
-    // PUT /api/applications/{id}/status
-    // Body: { "status": "accepted" } atau { "status": "rejected" }
     Route::put('/applications/{id}/status', [PostController::class, 'updateApplicationStatus']);
-
-    // [BARU] Ambil history lamaran milik user yang lagi login (untuk pelamar)
-    // GET /api/my-application-history
     Route::get('/my-application-history', [PostController::class, 'getMyApplicationHistory']);
-
-    // [BARU] History keputusan pemilik post (acc/reject yang sudah dilakukan)
-    // GET /api/my-decision-history
     Route::get('/my-decision-history', [PostController::class, 'getMyDecisionHistory']);
 
-    // Rute jalan pintas buat ngintip profil orang + skill + project-nya
-    Route::get('/users/{id}/profile', function($id) {
-        $user = \App\Models\User::with(['skills', 'projects'])->find($id);
+    // ── Public profile orang lain ─────────────────────────────────────────────
+    Route::get('/users/{id}/profile', function ($id) {
+        $user = \App\Models\User::with(['skills', 'projects', 'projectHistories'])->find($id);
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'User nggak ketemu'], 404);
         }
         return response()->json(['success' => true, 'data' => $user]);
     });
-
-    // Rute buat fitur Profil
-    Route::get('/profile', [ProfileController::class, 'getProfile']);
-    Route::post('/profile/skills', [ProfileController::class, 'addSkill']);
-    Route::post('/profile/projects', [ProfileController::class, 'addProject']);
 });
