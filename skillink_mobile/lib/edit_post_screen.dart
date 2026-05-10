@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,29 +16,46 @@ class EditPostScreen extends StatefulWidget {
 class _EditPostScreenState extends State<EditPostScreen> {
   late TextEditingController _contentController;
   late TextEditingController _tagsController;
+  late TextEditingController _maxAnggotaController;
   late String _selectedPostType;
 
-  final List<String> _postTypes = ['Kolaborasi Proyek', 'Kolaborasi Lomba', 'Kolaborasi Projek'];
+  final List<String> _postTypes = [
+    'Kolaborasi Proyek',
+    'Kolaborasi Lomba',
+    'Kolaborasi Projek',
+  ];
 
   @override
   void initState() {
     super.initState();
-    // Isi otomatis form-nya pakai data lama
-    _contentController = TextEditingController(text: widget.post['content']);
+    _contentController =
+        TextEditingController(text: widget.post['content']);
     _tagsController = TextEditingController(text: widget.post['tags']);
-    
-    // Pastiin tipenya valid, kalau nggak default ke Kolaborasi
-    _selectedPostType = _postTypes.contains(widget.post['post_type']) 
-        ? widget.post['post_type'] 
+
+    // Isi max_anggota dari data lama; tampilkan kosong kalau nilainya 0
+    final existingMax = widget.post['max_anggota'];
+    _maxAnggotaController = TextEditingController(
+      text: (existingMax != null && existingMax != 0)
+          ? existingMax.toString()
+          : '',
+    );
+
+    _selectedPostType = _postTypes.contains(widget.post['post_type'])
+        ? widget.post['post_type']
         : 'Kolaborasi Proyek';
   }
 
   Future<void> updatePost() async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/posts/${widget.post['id']}');
+    final url =
+        Uri.parse('${ApiConfig.baseUrl}/posts/${widget.post['id']}');
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('user_token');
+
+      final maxAnggotaText = _maxAnggotaController.text.trim();
+      final maxAnggota =
+          maxAnggotaText.isNotEmpty ? maxAnggotaText : '0';
 
       final response = await http.put(
         url,
@@ -50,19 +68,28 @@ class _EditPostScreenState extends State<EditPostScreen> {
           'post_type': _selectedPostType,
           'content': _contentController.text,
           'tags': _tagsController.text,
+          'max_anggota': maxAnggota,
         },
       );
 
       final data = json.decode(response.body);
 
+      if (!mounted) return;
+
       if (response.statusCode == 200 && data['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Postingan diupdate!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Postingan diupdate!'),
+            backgroundColor: Colors.green,
+          ),
         );
-        Navigator.pop(context, true); // Tutup dan kasih sinyal sukses
+        Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal: ${data['message']}'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Gagal: ${data['message']}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
@@ -77,7 +104,14 @@ class _EditPostScreenState extends State<EditPostScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
-        title: const Text('Edit Postingan', style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Edit Postingan',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.black),
           onPressed: () => Navigator.pop(context),
@@ -88,10 +122,18 @@ class _EditPostScreenState extends State<EditPostScreen> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0077B5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
-              onPressed: () => updatePost(),
-              child: const Text('Simpan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              onPressed: updatePost,
+              child: const Text(
+                'Simpan',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           )
         ],
@@ -101,16 +143,25 @@ class _EditPostScreenState extends State<EditPostScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Jenis Postingan', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+            const Text(
+              'Jenis Postingan',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+            ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: _selectedPostType,
               decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               items: _postTypes.map((String type) {
-                return DropdownMenuItem<String>(value: type, child: Text(type));
+                return DropdownMenuItem<String>(
+                  value: type,
+                  child: Text(type),
+                );
               }).toList(),
               onChanged: (String? newValue) {
                 setState(() {
@@ -119,23 +170,61 @@ class _EditPostScreenState extends State<EditPostScreen> {
               },
             ),
             const SizedBox(height: 20),
-            const Text('Deskripsi Proyek / Ajakan', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+
+            const Text(
+              'Deskripsi Proyek / Ajakan',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _contentController,
               maxLines: 6,
               decoration: InputDecoration(
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 20),
-            const Text('Keahlian yang Dicari (Tags)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+
+            const Text(
+              'Keahlian yang Dicari (Tags)',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _tagsController,
               decoration: InputDecoration(
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 prefixIcon: const Icon(Icons.tag),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ===== [BARU] Kolom Maksimal Anggota =====
+            const Text(
+              'Maksimal Anggota yang Direkrut',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Kosongkan jika tidak ingin membatasi jumlah anggota.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _maxAnggotaController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                hintText: 'Contoh: 5',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                prefixIcon: const Icon(Icons.group),
+                suffixText: 'orang',
               ),
             ),
           ],

@@ -22,7 +22,51 @@ class SkillinkApp extends StatelessWidget {
         primaryColor: const Color(0xFF0077B5),
         scaffoldBackgroundColor: const Color(0xFFF5F5F5),
       ),
-      home: const LoginScreen(),
+
+      // CEK LOGIN DULU
+      home: const CheckLogin(),
+    );
+  }
+}
+
+// CHECK LOGIN
+
+class CheckLogin extends StatefulWidget {
+  const CheckLogin({super.key});
+
+  @override
+  State<CheckLogin> createState() => _CheckLoginState();
+}
+
+class _CheckLoginState extends State<CheckLogin> {
+  Future<bool> isLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    String? token = prefs.getString('token');
+
+    return token != null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: isLoggedIn(),
+      builder: (context, snapshot) {
+        // Loading
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        // Kalau sudah login
+        if (snapshot.data == true) {
+          return const MainNavigation();
+        }
+
+        // Kalau belum login
+        return const LoginScreen();
+      },
     );
   }
 }
@@ -41,10 +85,10 @@ class _MainNavigationState extends State<MainNavigation> {
   final GlobalKey<SmartFeedScreenState> _feedKey = GlobalKey();
 
   List<Widget> get _widgetOptions => [
-        SmartFeedScreen(key: _feedKey),
-        const NetworkScreen(),
-        const ProfileScreen(),
-      ];
+    SmartFeedScreen(key: _feedKey),
+    const NetworkScreen(),
+    const ProfileScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -65,24 +109,51 @@ class _MainNavigationState extends State<MainNavigation> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.grey),
             onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.clear();
-
-              if (!mounted) return;
-
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text('Logout Confirmation'),
+                    content: const Text('Are you sure you want to logout?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context, false);
+                        },
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0077B5),
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context, true);
+                        },
+                        child: const Text('Logout'),
+                      ),
+                    ],
+                  );
+                },
               );
+
+              if (confirm == true) {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.clear();
+
+                if (!mounted) return;
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
             },
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _widgetOptions,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _widgetOptions),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),

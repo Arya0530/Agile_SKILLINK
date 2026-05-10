@@ -6,7 +6,21 @@ import 'api_config.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final int userId;
-  const PublicProfileScreen({super.key, required this.userId});
+  final int? applicationId;
+  final String? applicantName;
+  final String? noWa;
+  final VoidCallback? onAccept;
+  final VoidCallback? onReject;
+
+  const PublicProfileScreen({
+    super.key,
+    required this.userId,
+    this.applicationId,
+    this.applicantName,
+    this.noWa,
+    this.onAccept,
+    this.onReject,
+  });
 
   @override
   State<PublicProfileScreen> createState() => _PublicProfileScreenState();
@@ -154,54 +168,107 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         ),
       ),
     ),
-    bottomNavigationBar: Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(color: Colors.grey.shade300, blurRadius: 5),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-           backgroundColor: Colors.red,
-           foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              onPressed: () {
-                print("Ditolak!");
-              },
-              child: const Text(
-                "Tolak",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+    bottomNavigationBar: widget.onAccept != null || widget.onReject != null
+        ? Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(color: Colors.grey.shade300, blurRadius: 5),
+              ],
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              onPressed: () {
-                print("Diterima!");
-              },
-              child: const Text(
-                "Terima",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Tolak Lamaran'),
+                          content: Text(
+                            'Yakin mau menolak lamaran dari ${widget.applicantName ?? 'pelamar ini'}?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('Batal'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(ctx); // tutup dialog
+                                Navigator.pop(context); // kembali ke list
+                                widget.onReject?.call();
+                              },
+                              child: const Text(
+                                'Ya, Tolak',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Tolak',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Terima Lamaran'),
+                          content: Text(
+                            'Yakin mau menerima lamaran dari ${widget.applicantName ?? 'pelamar ini'}?'
+                            '${widget.noWa != null && widget.noWa!.isNotEmpty ? '\n\nSetelah diterima, kamu akan langsung diarahkan ke WhatsApp mereka.' : ''}',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('Batal'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(ctx); // tutup dialog
+                                Navigator.pop(context); // kembali ke list
+                                widget.onAccept?.call();
+                              },
+                              child: const Text(
+                                'Ya, Terima',
+                                style: TextStyle(color: Colors.green),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Terima',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-    ),
+          )
+        : null,
   );
  }
 }

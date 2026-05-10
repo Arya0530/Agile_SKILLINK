@@ -6,17 +6,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; // 👇 INI KEKUATAN BARUNYA 👇
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    // 👇 DAN HARUS DIPASANG DI SINI JUGA 👇
-    use HasApiTokens, HasFactory, Notifiable; 
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
      */
     protected $fillable = [
         'name',
@@ -28,8 +25,6 @@ class User extends Authenticatable
 
     /**
      * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
      */
     protected $hidden = [
         'password',
@@ -38,35 +33,44 @@ class User extends Authenticatable
 
     /**
      * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
-    // Relasi ke tabel skills (Satu user punya banyak skill)
+
+    // ─── RELASI ───────────────────────────────────────────────────────────────
+
+    // Postingan yang dibuat user ini
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    // Lamaran yang dikirim user ini
+    public function applications()
+    {
+        return $this->hasMany(Application::class);
+    }
+
+    // Skill yang dimiliki user ini
     public function skills()
     {
         return $this->hasMany(Skill::class);
     }
 
-    // Relasi ke tabel projects (Satu user punya banyak project)
+    // Proyek manual yang ditambahkan user ini (entry manual)
     public function projects()
     {
         return $this->hasMany(Project::class);
     }
-    // Relasi ke tabel applications (Satu user bisa ngelamar banyak kerjaan)
-    public function applications()
+
+    // [BARU] Portofolio otomatis dari proyek yang selesai
+    public function projectHistories()
     {
-        return $this->hasMany(Application::class);
-    }
-    // Relasi ke tabel posts (Satu user bisa bikin banyak postingan)
-    public function posts()
-    {
-        return $this->hasMany(Post::class);
+        return $this->hasMany(ProjectHistory::class)->latest();
     }
 }
