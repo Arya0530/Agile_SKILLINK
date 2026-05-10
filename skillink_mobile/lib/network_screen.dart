@@ -366,92 +366,48 @@ class _NetworkScreenState extends State<NetworkScreen> {
                               const SizedBox(height: 16),
 
                               // ===== TOMBOL AKSI =====
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton.icon(
-                                      onPressed: () {
-                                        _updateApplicationStatus(
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            PublicProfileScreen(
+                                          userId: app['applicant_id'],
                                           applicationId: applicationId,
-                                          status: 'accepted',
-                                          index: index,
+                                          applicantName:
+                                              app['applicant_name'] ?? '',
                                           noWa: app['applicant_no_wa'],
-                                        );
-                                      },
-                                      icon: const Icon(Icons.check, size: 16),
-                                      label: const Text('Terima & WA'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
-                                        foregroundColor: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: ElevatedButton.icon(
-                                      onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (ctx) => AlertDialog(
-                                            title:
-                                                const Text('Tolak Lamaran'),
-                                            content: Text(
-                                              'Yakin mau nolak lamaran dari ${app['applicant_name']}?',
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(ctx),
-                                                child: const Text('Batal'),
-                                              ),
-                                              TextButton(
-                                                onPressed: () {
-                                                  Navigator.pop(ctx);
-                                                  _updateApplicationStatus(
-                                                    applicationId: applicationId,
-                                                    status: 'rejected',
-                                                    index: index,
-                                                  );
-                                                },
-                                                child: const Text(
-                                                  'Ya, Tolak',
-                                                  style: TextStyle(
-                                                      color: Colors.red),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                      icon: const Icon(Icons.close, size: 16),
-                                      label: const Text('Tolak'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red.shade400,
-                                        foregroundColor: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              PublicProfileScreen(
-                                            userId: app['applicant_id'],
-                                          ),
+                                          onAccept: () {
+                                            _updateApplicationStatus(
+                                              applicationId: applicationId,
+                                              status: 'accepted',
+                                              index: index,
+                                              noWa: app['applicant_no_wa'],
+                                            );
+                                          },
+                                          onReject: () {
+                                            _updateApplicationStatus(
+                                              applicationId: applicationId,
+                                              status: 'rejected',
+                                              index: index,
+                                            );
+                                          },
                                         ),
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          const Color(0xFF0077B5),
-                                      foregroundColor: Colors.white,
-                                    ),
-                                    child: const Text('Profil'),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.person, size: 16),
+                                  label: const Text('Lihat Profil'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF0077B5),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
                                   ),
-                                ],
+                                ),
                               ),
                             ],
                           ),
