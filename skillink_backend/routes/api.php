@@ -22,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ── Profile ───────────────────────────────────────────────────────────────
     Route::get('/profile', [ProfileController::class, 'getProfile']);
+    Route::put('/profile', [ProfileController::class, 'updateProfile']);
     Route::post('/profile/skills', [ProfileController::class, 'addSkill']);
     Route::delete('/profile/skills/{id}', [ProfileController::class, 'deleteSkill']);
     Route::post('/profile/projects', [ProfileController::class, 'addProject']);

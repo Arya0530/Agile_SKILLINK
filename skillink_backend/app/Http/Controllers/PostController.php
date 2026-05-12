@@ -29,6 +29,22 @@ class PostController extends Controller
 
         $posts = $query->get();
 
+        // Cek apakah user sedang terautentikasi
+        $user = auth('sanctum')->user();
+
+        // Tambahkan info apakah user sudah apply ke setiap post
+        if ($user) {
+            $userAppliedPostIds = $user->applications()->pluck('post_id')->toArray();
+            $posts->each(function ($post) use ($userAppliedPostIds) {
+                $post->user_already_applied = in_array($post->id, $userAppliedPostIds);
+            });
+        } else {
+            // Jika tidak ada user yang login, set semua ke false
+            $posts->each(function ($post) {
+                $post->user_already_applied = false;
+            });
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Daftar Postingan Skillink Berhasil Diambil',

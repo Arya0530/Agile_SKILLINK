@@ -103,6 +103,11 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('user_token');
 
+    // Reload myName setiap kali fetch
+    setState(() {
+      myName = prefs.getString('user_name') ?? myName;
+    });
+
     final uri = Uri.parse('${ApiConfig.baseUrl}/my-posts').replace(
       queryParameters:
           _searchQuery.isNotEmpty ? {'tag': _searchQuery} : null,
@@ -409,7 +414,7 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     final int maxAnggota = (post['max_anggota'] ?? 0) as int;
     final int acceptedCount = (post['accepted_count'] ?? 0) as int;
     final bool isApply =
-        post['is_apply'] == 1 || post['is_apply'] == true;
+        post['user_already_applied'] == 1 || post['user_already_applied'] == true;
     final bool isClosed =
         post['is_closed'] == 1 || post['is_closed'] == true;
     final bool isCompleted =
@@ -597,11 +602,11 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
                     isClosed: isClosed, isCompleted: isCompleted, isApply: isApply)
               else if (!isOwn)
                 ElevatedButton(
-                  onPressed: kuotaPenuh
+                  onPressed: (kuotaPenuh || isApply)
                       ? null
                       : () => _applyJob(post['id']),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kuotaPenuh
+                    backgroundColor: (kuotaPenuh || isApply)
                         ? Colors.grey.shade400
                         : const Color(0xFF0077B5),
                     disabledBackgroundColor: Colors.grey.shade300,
@@ -609,9 +614,9 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
                   child: Text(
                     kuotaPenuh
                         ? 'Kuota Penuh'
-                        : (isApply ? 'Easy Apply' : 'Apply'),
+                        : (isApply ? 'sudah apply' : 'Apply'),
                     style: TextStyle(
-                      color: kuotaPenuh
+                      color: (kuotaPenuh || isApply)
                           ? Colors.grey.shade600
                           : Colors.white,
                     ),
