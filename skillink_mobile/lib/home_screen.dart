@@ -32,6 +32,20 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
   final TextEditingController _searchController = TextEditingController();
   final Set<int> _expandedPosts = {};
 
+  // ===== [BARU] FILTER STATE =====
+  // Menyimpan jenis postingan yang dipilih untuk filter.
+  // null = tidak ada filter aktif (tampilkan semua).
+  String? _selectedFilterType;
+
+  // Daftar jenis postingan sama persis dengan create_post_screen.dart
+  final List<String> _postTypes = [
+    'Kolaborasi Proyek',
+    'Kolaborasi Lomba',
+    'Kolaborasi Projek',
+    'Kolaborasi Startup',
+  ];
+  // ===== END FILTER STATE =====
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +63,50 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     super.dispose();
   }
 
+  Widget _buildTags(String? tags) {
+    if (tags == null || tags.isEmpty) return const SizedBox();
+
+    final tagList = tags.split(' ');
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: tagList.map((tag) {
+        if (!tag.startsWith('#')) tag = '#$tag';
+
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _searchQuery = tag.replaceAll('#', '');
+              _searchController.text = _searchQuery;
+            });
+
+            fetchPosts();
+            _fetchMyPosts();
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 5,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE7F3FF),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              tag,
+              style: const TextStyle(
+                color: Color(0xFF0077B5),
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   // ─── LOAD USER NAME ────────────────────────────────────────────────────────
 
   Future<void> _loadMyName() async {
@@ -57,6 +115,7 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
   }
 
   // ─── FETCH: FOR YOU ────────────────────────────────────────────────────────
+  // [DIPERBARUI] Menambahkan parameter 'post_type' ke query jika filter aktif.
 
   Future<void> fetchPosts() async {
     setState(() => _isLoadingForYou = true);
@@ -64,9 +123,13 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('user_token');
 
+    // Bangun query parameters: tag (dari search) + post_type (dari filter)
+    final Map<String, String> queryParams = {};
+    if (_searchQuery.isNotEmpty) queryParams['tag'] = _searchQuery;
+    if (_selectedFilterType != null) queryParams['post_type'] = _selectedFilterType!;
+
     final uri = Uri.parse('${ApiConfig.baseUrl}/posts').replace(
-      queryParameters:
-          _searchQuery.isNotEmpty ? {'tag': _searchQuery} : null,
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
     );
 
     try {
@@ -96,6 +159,7 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
   }
 
   // ─── FETCH: MY POST ────────────────────────────────────────────────────────
+  // [DIPERBARUI] Menambahkan parameter 'post_type' ke query jika filter aktif.
 
   Future<void> _fetchMyPosts() async {
     setState(() => _isLoadingMyPost = true);
@@ -103,14 +167,17 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('user_token');
 
-    // Reload myName setiap kali fetch
     setState(() {
       myName = prefs.getString('user_name') ?? myName;
     });
 
+    // Bangun query parameters: tag (dari search) + post_type (dari filter)
+    final Map<String, String> queryParams = {};
+    if (_searchQuery.isNotEmpty) queryParams['tag'] = _searchQuery;
+    if (_selectedFilterType != null) queryParams['post_type'] = _selectedFilterType!;
+
     final uri = Uri.parse('${ApiConfig.baseUrl}/my-posts').replace(
-      queryParameters:
-          _searchQuery.isNotEmpty ? {'tag': _searchQuery} : null,
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
     );
 
     try {
@@ -154,6 +221,152 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     setState(() => _searchQuery = '');
     fetchPosts();
     _fetchMyPosts();
+  }
+
+  // ─── [BARU] SHOW FILTER BOTTOM SHEET ──────────────────────────────────────
+  // Menampilkan bottom sheet berisi pilihan jenis postingan untuk filter.
+
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        // Menggunakan StatefulBuilder agar pilihan langsung ter-highlight
+        // sebelum di-apply tanpa perlu rebuild seluruh halaman.
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Header ──────────────────────────────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Filter Jenis Postingan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      // Tombol reset filter jika ada filter aktif
+                      if (_selectedFilterType != null)
+                        TextButton(
+                          onPressed: () {
+                            setState(() => _selectedFilterType = null);
+                            Navigator.pop(ctx);
+                            fetchPosts();
+                            _fetchMyPosts();
+                          },
+                          child: const Text(
+                            'Reset Filter',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Pilih satu jenis postingan untuk memfilter hasil.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ── Pilihan Jenis Postingan ──────────────────────────────
+                  ..._postTypes.map((type) {
+                    final bool isSelected = _selectedFilterType == type;
+                    return GestureDetector(
+                      onTap: () {
+                        // Toggle: kalau sudah dipilih, klik lagi = reset
+                        setModalState(() {});
+                        setState(() {
+                          _selectedFilterType =
+                              isSelected ? null : type;
+                        });
+                        Navigator.pop(ctx);
+                        fetchPosts();
+                        _fetchMyPosts();
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFFE7F3FF)
+                              : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFF0077B5)
+                                : Colors.transparent,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _iconForPostType(type),
+                              size: 18,
+                              color: isSelected
+                                  ? const Color(0xFF0077B5)
+                                  : Colors.grey,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              type,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? const Color(0xFF0077B5)
+                                    : Colors.black87,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (isSelected)
+                              const Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF0077B5),
+                                size: 18,
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ─── [BARU] HELPER: ICON PER JENIS POSTINGAN ──────────────────────────────
+  // Mengembalikan icon yang sesuai untuk masing-masing jenis postingan.
+
+  IconData _iconForPostType(String type) {
+    switch (type) {
+      case 'Kolaborasi Proyek':
+        return Icons.work_outline;
+      case 'Kolaborasi Lomba':
+        return Icons.emoji_events_outlined;
+      case 'Kolaborasi Projek':
+        return Icons.folder_open;
+      case 'Kolaborasi Startup':
+        return Icons.rocket_launch_outlined;
+      default:
+        return Icons.category_outlined;
+    }
   }
 
   // ─── ACTIONS ───────────────────────────────────────────────────────────────
@@ -227,10 +440,8 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
   }
 
   // ─── [BARU] TUTUP REKRUTMEN ────────────────────────────────────────────────
-  // POST hilang dari For You, tetap di My Post dengan label "Ditutup"
 
   Future<void> _closeRecruitment(int postId) async {
-    // Konfirmasi dulu sebelum eksekusi
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -283,8 +494,8 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
       );
 
       if (response.statusCode == 200) {
-        fetchPosts();     // refresh For You (post sudah hilang dari sini)
-        _fetchMyPosts();  // refresh My Post (tampilkan label baru)
+        fetchPosts();
+        _fetchMyPosts();
       }
     } catch (e) {
       debugPrint('Gagal tutup rekrutmen: $e');
@@ -292,7 +503,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
   }
 
   // ─── [BARU] PROYEK SELESAI ─────────────────────────────────────────────────
-  // Label berubah + project history otomatis dibuat untuk semua anggota
 
   Future<void> _completeProject(int postId) async {
     final confirm = await showDialog<bool>(
@@ -409,7 +619,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     );
   }
 
-  /// Kartu postingan untuk kedua tab.
   Widget _buildPostCard(Map post, {bool isMyPost = false}) {
     final int maxAnggota = (post['max_anggota'] ?? 0) as int;
     final int acceptedCount = (post['accepted_count'] ?? 0) as int;
@@ -435,19 +644,23 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                backgroundColor: Colors.grey[300],
-                child: const Icon(Icons.person, color: Colors.white),
+                radius: 20,
+                backgroundColor: const Color(0xFF0077B5),
+                child: Text(
+                  (post['author_name'] ?? '?')[0].toUpperCase(),
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      post['author_name'] ?? '',
+                      post['author_name'] ?? '-',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 14,
                       ),
                     ),
                     Text(
@@ -533,6 +746,7 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
                   style: const TextStyle(
                       fontSize: 14, color: Colors.black87),
                 ),
+                _buildTags(post['tags']),
                 if (isLongText)
                   GestureDetector(
                     onTap: () => setState(() {
@@ -558,17 +772,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
               ],
             );
           }),
-
-          const SizedBox(height: 8),
-
-          // ── TAG ─────────────────────────────────────────────────
-          Text(
-            post['tags'] ?? '',
-            style: const TextStyle(
-              color: Color(0xFF0077B5),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
 
           const SizedBox(height: 8),
 
@@ -599,7 +802,9 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
 
               if (isMyPost)
                 _buildOwnerStatusBadge(post,
-                    isClosed: isClosed, isCompleted: isCompleted, isApply: isApply)
+                    isClosed: isClosed,
+                    isCompleted: isCompleted,
+                    isApply: isApply)
               else if (!isOwn)
                 ElevatedButton(
                   onPressed: (kuotaPenuh || isApply)
@@ -628,12 +833,11 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
             ],
           ),
 
-          // ── [BARU] TOMBOL AKSI OWNER (hanya di My Post) ─────────
+          // ── TOMBOL AKSI OWNER (hanya di My Post) ────────────────
           if (isMyPost && !isCompleted) ...[
             const SizedBox(height: 10),
             Row(
               children: [
-                // Tombol "Tutup Rekrutmen" — hanya tampil jika belum ditutup
                 if (!isClosed)
                   Expanded(
                     child: OutlinedButton.icon(
@@ -657,7 +861,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
 
                 if (!isClosed) const SizedBox(width: 8),
 
-                // Tombol "Proyek Selesai" — selalu tampil jika belum completed
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _completeProject(post['id']),
@@ -685,15 +888,13 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     );
   }
 
-  /// [DIPERBARUI] Badge status di My Post:
-  /// Menangani 4 kondisi: Masih Buka / Kuota Penuh / Ditutup / Proyek Selesai
+  /// Badge status di My Post
   Widget _buildOwnerStatusBadge(
     Map post, {
     required bool isClosed,
     required bool isCompleted,
     required bool isApply,
   }) {
-    // ── Proyek Selesai ───────────────────────────────────────────
     if (isCompleted) {
       return _statusBadge(
         icon: Icons.check_circle,
@@ -703,7 +904,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
       );
     }
 
-    // ── Ditutup Manual ───────────────────────────────────────────
     if (isClosed) {
       return _statusBadge(
         icon: Icons.lock,
@@ -713,7 +913,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
       );
     }
 
-    // ── Masih Buka ───────────────────────────────────────────────
     if (isApply) {
       return _statusBadge(
         icon: Icons.lock_open,
@@ -723,7 +922,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
       );
     }
 
-    // ── Kuota Auto-Penuh (is_apply=0 tapi bukan manual close) ───
     return _statusBadge(
       icon: Icons.group_off,
       label: 'Kuota Penuh',
@@ -763,7 +961,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     );
   }
 
-  /// List postingan yang dipakai di kedua TabBarView.
   Widget _buildPostList(
     List posts,
     bool isLoading, {
@@ -803,12 +1000,13 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
                         ),
                         const SizedBox(height: 16),
                         Text(
+                          // [DIPERBARUI] Pesan kosong sesuai kondisi filter
                           isMyPost
-                              ? (_searchQuery.isNotEmpty
-                                  ? 'Postinganmu dengan tag "$_searchQuery" nggak ada nih.'
+                              ? (_searchQuery.isNotEmpty || _selectedFilterType != null
+                                  ? 'Postinganmu tidak ditemukan\ndengan filter ini.'
                                   : 'Kamu belum punya postingan.\nYuk bikin yang pertama!')
-                              : (_searchQuery.isNotEmpty
-                                  ? 'Nggak ada postingan dengan tag "$_searchQuery"'
+                              : (_searchQuery.isNotEmpty || _selectedFilterType != null
+                                  ? 'Nggak ada postingan dengan\nfilter yang kamu pilih.'
                                   : 'Belum ada postingan nih.'),
                           style:
                               TextStyle(color: Colors.grey[500], fontSize: 14),
@@ -833,6 +1031,9 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
 
   @override
   Widget build(BuildContext context) {
+    // [BARU] Cek apakah ada filter yang sedang aktif untuk badge indikator
+    final bool isFilterActive = _selectedFilterType != null;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
@@ -858,46 +1059,140 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
             ),
           ),
 
-          // ── SEARCH BAR ──────────────────────────────────────────
+          // ── SEARCH BAR + FILTER ICON ─────────────────────────────
+          // [DIPERBARUI] Menambahkan icon filter di sebelah kanan search bar.
           Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              decoration: InputDecoration(
-                hintText: 'Cari skill... contoh: #Flutter',
-                hintStyle:
-                    const TextStyle(color: Colors.grey, fontSize: 14),
-                prefixIcon: const Icon(Icons.search,
-                    color: Colors.grey, size: 20),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close,
-                            color: Colors.grey, size: 20),
-                        onPressed: _clearSearch,
-                      )
-                    : null,
-                filled: true,
-                fillColor: const Color(0xFFF5F5F5),
-                contentPadding: const EdgeInsets.symmetric(
-                    vertical: 10, horizontal: 16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide.none,
+            child: Row(
+              children: [
+                // Search TextField (diperluas mengisi sisa ruang)
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    decoration: InputDecoration(
+                      hintText: 'Cari skill... contoh: #Flutter',
+                      hintStyle:
+                          const TextStyle(color: Colors.grey, fontSize: 14),
+                      prefixIcon: const Icon(Icons.search,
+                          color: Colors.grey, size: 20),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close,
+                                  color: Colors.grey, size: 20),
+                              onPressed: _clearSearch,
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: const Color(0xFFF5F5F5),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 16),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: const BorderSide(
+                            color: Color(0xFF0077B5), width: 1.5),
+                      ),
+                    ),
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide.none,
+
+                // [BARU] Tombol Filter dengan badge jika filter aktif
+                const SizedBox(width: 8),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Tombol filter utama
+                    GestureDetector(
+                      onTap: _showFilterBottomSheet,
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isFilterActive
+                              ? const Color(0xFF0077B5)
+                              : const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.tune_rounded,
+                          size: 22,
+                          color: isFilterActive
+                              ? Colors.white
+                              : Colors.grey,
+                        ),
+                      ),
+                    ),
+
+                    // Badge titik merah kecil saat filter aktif
+                    if (isFilterActive)
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: const BorderSide(
-                      color: Color(0xFF0077B5), width: 1.5),
-                ),
-              ),
+              ],
             ),
           ),
+
+          // [BARU] Chip penanda filter aktif — tampil di bawah search bar
+          // Memudahkan user tahu filter apa yang sedang aktif + bisa di-tap untuk reset
+          if (isFilterActive)
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  Chip(
+                    label: Text(
+                      _selectedFilterType!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF0077B5),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    avatar: const Icon(
+                      Icons.filter_list,
+                      size: 14,
+                      color: Color(0xFF0077B5),
+                    ),
+                    deleteIcon: const Icon(
+                      Icons.close,
+                      size: 14,
+                      color: Color(0xFF0077B5),
+                    ),
+                    onDeleted: () {
+                      // Tap X di chip untuk reset filter
+                      setState(() => _selectedFilterType = null);
+                      fetchPosts();
+                      _fetchMyPosts();
+                    },
+                    backgroundColor: const Color(0xFFE7F3FF),
+                    side: const BorderSide(color: Color(0xFF0077B5)),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+            ),
 
           // ── CONTENT ─────────────────────────────────────────────
           Expanded(

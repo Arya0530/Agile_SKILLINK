@@ -22,7 +22,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final List<String> _postTypes = [
     'Kolaborasi Proyek',
     'Kolaborasi Lomba',
-    'Kolaborasi Projek',
+    'Kolaborasi Penelitian',
+    'Kolaborasi Startup',
+    'Kolaborasi Tugas'
   ];
 
   Future<void> submitPost() async {
