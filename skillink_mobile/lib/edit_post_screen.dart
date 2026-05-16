@@ -22,7 +22,9 @@ class _EditPostScreenState extends State<EditPostScreen> {
   final List<String> _postTypes = [
     'Kolaborasi Proyek',
     'Kolaborasi Lomba',
-    'Kolaborasi Projek',
+    'Kolaborasi Penelitian',
+    'Kolaborasi Startup',
+    'Kolaborasi Tugas'
   ];
 
   @override

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Post;
 
 class ProfileController extends Controller
 {
@@ -36,6 +37,53 @@ class ProfileController extends Controller
                 'skills'           => $user->skills,
                 'projects'         => $user->projects,         // manual projects (tetap ada)
                 'project_histories' => $formattedHistories,    // [BARU] auto portfolio
+            ]
+        ]);
+    }
+
+    // [BARU] Fungsi buat update profil user (nama, email, no_wa, jurusan)
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'name'    => 'required|string|max:255',
+            'email'   => 'required|email|unique:users,email,' . $request->user()->id,
+            'no_wa'   => 'required|string|max:20',
+            'jurusan' => 'required|string|max:255',
+            'password' => 'nullable|string|min:6|confirmed',
+        ]);
+
+        $user = $request->user();
+        $oldName = $user->name;
+        $newName = $request->name;
+        
+        // Update profil user
+        $user->name = $newName;
+        $user->email = $request->email;
+        $user->no_wa = $request->no_wa;
+        $user->jurusan = $request->jurusan;
+
+        // Update password jika ada dan valid
+        if ($request->filled('password')) {
+            $user->password = bcrypt($request->password);
+        }
+
+        $user->save();
+
+        // [BARU] Update semua posts user dengan nama terbaru jika nama berubah
+        if ($oldName !== $newName) {
+            Post::where('user_id', $user->id)
+                ->update(['author_name' => $newName]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profil berhasil diperbarui!',
+            'data'    => [
+                'id'       => $user->id,
+                'name'     => $user->name,
+                'email'    => $user->email,
+                'jurusan'  => $user->jurusan,
+                'no_wa'    => $user->no_wa,
             ]
         ]);
     }

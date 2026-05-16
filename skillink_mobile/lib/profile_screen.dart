@@ -66,9 +66,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final data = json.decode(response.body);
         if (data['success'] == true) {
           setState(() {
+            _name = data['data']['name'] ?? _name;
+            _major = data['data']['jurusan'] ?? _major;
+
             _skills = data['data']['skills'] ?? [];
             _projects = data['data']['projects'] ?? [];
-            // [BARU] ambil project histories
             _projectHistories = data['data']['project_histories'] ?? [];
           });
         }
@@ -161,13 +163,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Expanded(
                             child: ElevatedButton(
                               onPressed: () async {
-                                await Navigator.push(
+                                final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) =>
-                                          const EditProfileScreen()),
+                                    builder: (context) => const EditProfileScreen(),
+                                  ),
                                 );
-                                _fetchProfileData();
+
+                                if (result == true) {
+                                  await _loadUserData();
+                                  await _fetchProfileData();
+                                }
                               },
                               style: _blueButtonStyle(),
                               child: const Text('EDIT PROFIL',

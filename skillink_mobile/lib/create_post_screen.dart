@@ -22,7 +22,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final List<String> _postTypes = [
     'Kolaborasi Proyek',
     'Kolaborasi Lomba',
-    'Kolaborasi Projek',
+    'Kolaborasi Penelitian',
+    'Kolaborasi Startup',
+    'Kolaborasi Tugas'
   ];
 
   Future<void> submitPost() async {
@@ -33,10 +35,20 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       final token = prefs.getString('user_token');
       final namaUser = prefs.getString('user_name') ?? 'Mahasiswa Anonim';
 
-      // Ambil nilai max_anggota — kalau kosong kirim '0' (tidak dibatasi)
+      // Ambil nilai max_anggota — kalau kosong tidak dikirim (null = tidak dibatasi)
       final maxAnggotaText = _maxAnggotaController.text.trim();
-      final maxAnggota =
-          maxAnggotaText.isNotEmpty ? maxAnggotaText : '0';
+
+      final Map<String, String> body = {
+        'author_name': namaUser,
+        'post_type': _selectedPostType,
+        'content': _contentController.text,
+        'tags': _tagsController.text,
+      };
+
+      // Hanya kirim max_anggota kalau diisi (biarkan null di backend jika kosong)
+      if (maxAnggotaText.isNotEmpty) {
+        body['max_anggota'] = maxAnggotaText;
+      }
 
       final response = await http.post(
         url,
@@ -45,13 +57,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           'Authorization': 'Bearer $token',
           'ngrok-skip-browser-warning': 'true',
         },
-        body: {
-          'author_name': namaUser,
-          'post_type': _selectedPostType,
-          'content': _contentController.text,
-          'tags': _tagsController.text,
-          'max_anggota': maxAnggota,
-        },
+        body: body,
       );
 
       final data = json.decode(response.body);
