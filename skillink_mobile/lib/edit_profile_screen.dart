@@ -12,6 +12,9 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+
+  bool _obscurePassword = true;
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _noWaController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -94,6 +97,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _noWaController.text.isEmpty ||
         _selectedJurusan == null ||
         _selectedJurusan!.isEmpty) {
+          
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Semua field wajib diisi!'),
@@ -103,6 +107,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
+    
     setState(() => _isLoading = true);
 
     try {
@@ -270,36 +275,61 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildField(String label, String hint, TextEditingController controller,
-      {bool isPass = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          const SizedBox(height: 8),
-          TextField(
-            controller: controller,
-            obscureText: isPass,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide:
-                    const BorderSide(color: Color(0xFF0077B5), width: 1.5),
-              ),
+ Widget _buildField(
+  String label,
+  String hint,
+  TextEditingController controller, {
+  bool isPass = false,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style:
+                const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+
+          // ⭐ PASSWORD HIDE / SHOW
+          obscureText: isPass ? _obscurePassword : false,
+
+          decoration: InputDecoration(
+            hintText: hint,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+
+            // ⭐ ICON MATA
+            suffixIcon: isPass
+                ? IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  )
+                : null,
+
+            border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide:
+                  const BorderSide(color: Color(0xFF0077B5), width: 1.5),
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   @override
   void dispose() {

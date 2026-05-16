@@ -41,8 +41,9 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
   final List<String> _postTypes = [
     'Kolaborasi Proyek',
     'Kolaborasi Lomba',
-    'Kolaborasi Projek',
+    'Kolaborasi Penelitian',
     'Kolaborasi Startup',
+    'Kolaborasi Tugas',
   ];
   // ===== END FILTER STATE =====
 
@@ -360,10 +361,12 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
         return Icons.work_outline;
       case 'Kolaborasi Lomba':
         return Icons.emoji_events_outlined;
-      case 'Kolaborasi Projek':
-        return Icons.folder_open;
+      case 'Kolaborasi Penelitian':
+        return Icons.science_outlined;
       case 'Kolaborasi Startup':
         return Icons.rocket_launch_outlined;
+      case 'Kolaborasi Tugas':
+        return Icons.assignment_outlined;
       default:
         return Icons.category_outlined;
     }
@@ -433,7 +436,17 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
         ),
       );
 
-      if (response.statusCode == 200) fetchPosts();
+      if (response.statusCode == 200) {
+  setState(() {
+    final index =
+        _forYouPosts.indexWhere((post) => post['id'] == postId);
+
+    if (index != -1) {
+      _forYouPosts[index]['user_already_applied'] = true;
+    }
+  });
+}
+
     } catch (e) {
       debugPrint('Gagal Apply: $e');
     }

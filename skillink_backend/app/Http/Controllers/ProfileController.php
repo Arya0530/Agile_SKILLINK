@@ -49,7 +49,7 @@ class ProfileController extends Controller
             'email'   => 'required|email|unique:users,email,' . $request->user()->id,
             'no_wa'   => 'required|string|max:20',
             'jurusan' => 'required|string|max:255',
-            'password' => 'nullable|string|min:8|confirmed',
+            'password' => 'nullable|string|min:6|confirmed',
         ]);
 
         $user = $request->user();

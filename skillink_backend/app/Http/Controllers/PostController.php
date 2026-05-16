@@ -100,7 +100,7 @@ class PostController extends Controller
             'is_closed'      => 0,
             'is_completed'   => 0,
             'is_boosted'     => 0,
-            'max_anggota'    => $request->input('max_anggota', 0),
+            'max_anggota'    => $request->filled('max_anggota') ? (int) $request->input('max_anggota') : 0,
             'accepted_count' => 0,
         ]);
 
