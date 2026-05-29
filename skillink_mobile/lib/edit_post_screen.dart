@@ -56,6 +56,22 @@ class _EditPostScreenState extends State<EditPostScreen> {
       final token = prefs.getString('user_token');
 
       final maxAnggotaText = _maxAnggotaController.text.trim();
+
+      // Validasi: max anggota tidak boleh lebih dari 10
+      if (maxAnggotaText.isNotEmpty) {
+        final maxVal = int.tryParse(maxAnggotaText) ?? 0;
+        if (maxVal < 1 || maxVal > 10) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Maksimal anggota harus antara 1–10 orang.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+      }
+
       final maxAnggota =
           maxAnggotaText.isNotEmpty ? maxAnggotaText : '0';
 
@@ -220,13 +236,16 @@ class _EditPostScreenState extends State<EditPostScreen> {
               controller: _maxAnggotaController,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              maxLength: 2,
               decoration: InputDecoration(
                 hintText: 'Contoh: 5',
+                helperText: 'Maksimum 10 orang',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
                 prefixIcon: const Icon(Icons.group),
                 suffixText: 'orang',
+                counterText: '',
               ),
             ),
           ],
