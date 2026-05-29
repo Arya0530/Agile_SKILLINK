@@ -483,7 +483,9 @@ class _NetworkScreenState extends State<NetworkScreen> {
                                   fontSize: 12, color: Colors.grey),
                             ),
                             Text(
-                              'Diperbarui: ${item['updated_at'] ?? '-'}',
+                              status == 'pending'
+                                  ? 'Dikirim: ${item['applied_at'] ?? '-'}'
+                                  : 'Diperbarui: ${item['updated_at'] ?? '-'}',
                               style: const TextStyle(
                                   fontSize: 12, color: Colors.grey),
                             ),
@@ -649,6 +651,8 @@ class _NetworkScreenState extends State<NetworkScreen> {
         return Colors.green;
       case 'rejected_auto':
         return Colors.orange.shade700;
+      case 'pending':
+        return Colors.blue.shade700;
       default: // 'rejected'
         return Colors.red;
     }
@@ -660,6 +664,8 @@ class _NetworkScreenState extends State<NetworkScreen> {
         return Colors.green.shade100;
       case 'rejected_auto':
         return Colors.orange.shade100;
+      case 'pending':
+        return Colors.blue.shade100;
       default:
         return Colors.red.shade100;
     }
@@ -671,6 +677,8 @@ class _NetworkScreenState extends State<NetworkScreen> {
         return Icons.check_circle;
       case 'rejected_auto':
         return Icons.block;
+      case 'pending':
+        return Icons.hourglass_top;
       default:
         return Icons.cancel;
     }
@@ -692,6 +700,11 @@ class _NetworkScreenState extends State<NetworkScreen> {
         bgColor = Colors.orange.shade50;
         borderColor = Colors.orange.shade700;
         textColor = Colors.orange.shade700;
+        break;
+      case 'pending':
+        bgColor = Colors.blue.shade50;
+        borderColor = Colors.blue.shade700;
+        textColor = Colors.blue.shade700;
         break;
       default: // 'rejected'
         bgColor = Colors.red.shade50;

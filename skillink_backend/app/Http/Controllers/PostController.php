@@ -87,7 +87,7 @@ class PostController extends Controller
             'post_type'   => 'required|string',
             'content'     => 'required|string',
             'tags'        => 'required|string',
-            'max_anggota' => 'nullable|integer|min:1',
+            'max_anggota' => 'nullable|integer|min:1|max:10',
         ]);
 
         $post = $request->user()->posts()->create([
@@ -312,11 +312,12 @@ class PostController extends Controller
         $applications = $request->user()
             ->applications()
             ->with('post')
-            ->whereIn('status', ['accepted', 'rejected', 'rejected_auto'])
+            ->whereIn('status', ['pending', 'accepted', 'rejected', 'rejected_auto'])
             ->latest()
             ->get()
             ->map(function ($app) {
                 $statusLabel = match ($app->status) {
+                    'pending'       => 'Menunggu',
                     'accepted'      => 'Diterima',
                     'rejected'      => 'Ditolak',
                     'rejected_auto' => 'Tertolak Otomatis',
@@ -412,7 +413,7 @@ class PostController extends Controller
             'post_type'   => 'required|string',
             'content'     => 'required|string',
             'tags'        => 'required|string',
-            'max_anggota' => 'nullable|integer|min:1',
+            'max_anggota' => 'nullable|integer|min:1|max:10',
         ]);
 
         $updateData = [
