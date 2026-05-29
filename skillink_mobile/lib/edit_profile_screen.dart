@@ -12,6 +12,8 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+  // Tambahan Form Key untuk validasi
+  final _formKey = GlobalKey<FormState>();
 
   bool _obscurePassword = true;
 
@@ -92,22 +94,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   // Update profil ke database
   Future<void> _updateProfile() async {
-    if (_nameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _noWaController.text.isEmpty ||
-        _selectedJurusan == null ||
-        _selectedJurusan!.isEmpty) {
-          
+    // Validasi form dijalankan di sini
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_selectedJurusan == null || _selectedJurusan!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Semua field wajib diisi!'),
+          content: Text('Jurusan wajib dipilih!'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    
     setState(() => _isLoading = true);
 
     try {
@@ -193,40 +194,46 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
       body: _isLoadingData
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                _buildField("Nama Lengkap", "Masukkan nama", _nameController),
-                _buildField(
-                    "Nomor WhatsApp", "0812...", _noWaController),
-                _buildField("Email", "email@gmail.com", _emailController),
-                _buildJurusanDropdown(),
-                _buildField("Password Baru", "Isi jika ingin ganti",
-                    _passwordController,
-                    isPass: true),
-                const SizedBox(height: 30),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0077B5),
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10))),
-                  onPressed: _isLoading ? null : _updateProfile,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text("SIMPAN PROFIL",
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold)),
-                ),
-              ],
+          : Form(
+              key: _formKey, // Bungkus ListView dengan Form
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  _buildField("Nama Lengkap", "Masukkan nama", _nameController),
+                  _buildField(
+                      "Nomor WhatsApp", "0812...", _noWaController),
+                  
+                  // Tambahkan parameter isEmail: true di sini
+                  _buildField("Email", "email@gmail.com", _emailController, isEmail: true),
+                  
+                  _buildJurusanDropdown(),
+                  _buildField("Password Baru", "Isi jika ingin ganti",
+                      _passwordController,
+                      isPass: true),
+                  const SizedBox(height: 30),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0077B5),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10))),
+                    onPressed: _isLoading ? null : _updateProfile,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text("SIMPAN PROFIL",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
             ),
     );
   }
@@ -275,61 +282,66 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
- Widget _buildField(
-  String label,
-  String hint,
-  TextEditingController controller, {
-  bool isPass = false,
-}) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style:
-                const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
+  Widget _buildField(
+    String label,
+    String hint,
+    TextEditingController controller, {
+    bool isPass = false,
+    bool isEmail = false, // Parameter baru
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 8),
+          TextFormField( // Ubah TextField jadi TextFormField
+            controller: controller,
+            obscureText: isPass ? _obscurePassword : false,
+            
+            // Logika validasi dimasukin ke sini
+            validator: (value) {
+              if (value == null || value.isEmpty) return '$label wajib diisi';
+              if (isEmail && !value.toLowerCase().endsWith('@gmail.com')) {
+                return 'Harap gunakan alamat @gmail.com';
+              }
+              return null;
+            },
 
-          // ⭐ PASSWORD HIDE / SHOW
-          obscureText: isPass ? _obscurePassword : false,
-
-          decoration: InputDecoration(
-            hintText: hint,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-
-            // ⭐ ICON MATA
-            suffixIcon: isPass
-                ? IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  )
-                : null,
-
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  const BorderSide(color: Color(0xFF0077B5), width: 1.5),
+            decoration: InputDecoration(
+              hintText: hint,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              suffixIcon: isPass
+                  ? IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    )
+                  : null,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFF0077B5), width: 1.5),
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   @override
   void dispose() {
