@@ -29,13 +29,13 @@ class ProfileController extends Controller
         return response()->json([
             'success' => true,
             'data'    => [
-                'id'               => $user->id,
-                'name'             => $user->name,
-                'email'            => $user->email,
-                'jurusan'          => $user->jurusan,
-                'no_wa'            => $user->no_wa,
-                'skills'           => $user->skills,
-                'projects'         => $user->projects,         // manual projects (tetap ada)
+                'id'                => $user->id,
+                'name'              => $user->name,
+                'email'             => $user->email,
+                'jurusan'           => $user->jurusan,
+                'no_wa'             => $user->no_wa,
+                'skills'            => $user->skills,
+                'projects'          => $user->projects,        // manual projects (tetap ada)
                 'project_histories' => $formattedHistories,    // [BARU] auto portfolio
             ]
         ]);
@@ -44,12 +44,15 @@ class ProfileController extends Controller
     // [BARU] Fungsi buat update profil user (nama, email, no_wa, jurusan)
     public function updateProfile(Request $request)
     {
+        // Tambahan validasi ends_with:@gmail.com dan custom message
         $request->validate([
-            'name'    => 'required|string|max:255',
-            'email'   => 'required|email|unique:users,email,' . $request->user()->id,
-            'no_wa'   => 'required|string|max:20',
-            'jurusan' => 'required|string|max:255',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email,' . $request->user()->id . '|ends_with:@gmail.com',
+            'no_wa'    => 'required|string|max:20',
+            'jurusan'  => 'required|string|max:255',
             'password' => 'nullable|string|min:6|confirmed',
+        ], [
+            'email.ends_with' => 'Email harus menggunakan domain @gmail.com'
         ]);
 
         $user = $request->user();
