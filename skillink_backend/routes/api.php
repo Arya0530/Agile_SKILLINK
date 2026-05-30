@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/profile/skills/{id}', [ProfileController::class, 'deleteSkill']);
     Route::post('/profile/projects', [ProfileController::class, 'addProject']);
     Route::delete('/profile/projects/{id}', [ProfileController::class, 'deleteProject']);
+    Route::put('/profile/projects/{id}', [ProfileController::class, 'updateProject']);
 
     // ── Posts ─────────────────────────────────────────────────────────────────
     Route::get('/my-posts', [PostController::class, 'myPosts']);

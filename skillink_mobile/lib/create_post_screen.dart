@@ -18,6 +18,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _tagsController = TextEditingController();
   final TextEditingController _maxAnggotaController = TextEditingController();
   String _selectedPostType = 'Kolaborasi Proyek';
+  bool _isSubmitting = false;
 
   final List<String> _postTypes = [
     'Kolaborasi Proyek',
@@ -28,6 +29,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   ];
 
   Future<void> submitPost() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
     final url = Uri.parse('${ApiConfig.baseUrl}/posts');
 
     try {
@@ -97,6 +100,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       }
     } catch (e) {
       debugPrint("Error nembak API Post: $e");
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -129,8 +134,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              onPressed: submitPost,
-              child: const Text(
+              onPressed: _isSubmitting ? null : submitPost,
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Text(
                 'Posting',
                 style: TextStyle(
                   color: Colors.white,
