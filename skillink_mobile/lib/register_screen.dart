@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'api_config.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -25,9 +26,44 @@ final List<String> _jurusanList = [
   bool _isLoading = false; // Buat nampilin loading pas lagi ngirim data
 
 // --- FUNGSI BUAT NEMBAK DATA KE LARAVEL ---
+  // Validasi nomor WhatsApp
+  String? validateWhatsAppNumber(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Nomor WhatsApp wajib diisi!';
+    }
+    
+    // Cek hanya angka saja (tidak boleh alfabet)
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+      return 'Nomor WhatsApp hanya boleh berisi angka!';
+    }
+    
+    // Cek panjang minimal 10 dan maksimal 13
+    if (value.length < 10) {
+      return 'Nomor WhatsApp minimal 10 digit!';
+    }
+    
+    if (value.length > 13) {
+      return 'Nomor WhatsApp maksimal 13 digit!';
+    }
+    
+    return null; // Validasi berhasil
+  }
+
   Future<void> registerUser() async {
 
-  // ✅ TARUH DI SINI (PALING ATAS)
+  // ✅ VALIDASI NO WA DULU SEBELUM SUBMIT
+  String? waValidation = validateWhatsAppNumber(_noWaController.text);
+  if (waValidation != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(waValidation),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    return;
+  }
+
+  // ✅ VALIDASI JURUSAN
   if (_selectedJurusan == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -137,9 +173,54 @@ final List<String> _jurusanList = [
 ),
                 const SizedBox(height: 16),
                 TextField(
-                  controller: _noWaController, 
-                  keyboardType: TextInputType.phone, // Biar keyboard HP otomatis munculin angka
-                  decoration: _buildInputDecor('Nomor WhatsApp (Cth: 0812...)', Icons.phone_android)
+                  controller: _noWaController,
+                  keyboardType: TextInputType.phone,
+                  // ✅ HANYA TERIMA ANGKA (0-9)
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    // ✅ BATASI MAX 13 ANGKA
+                    LengthLimitingTextInputFormatter(13),
+                  ],
+                  decoration: _buildInputDecor('Nomor WhatsApp (Cth: 0812...)', Icons.phone_android),
+                  onChanged: (value) {
+                    // Real-time validation feedback
+                    setState(() {});
+                  },
+                ),
+                // ✅ TAMPILKAN COUNTER KARAKTER & VALIDASI
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0, left: 12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _noWaController.text.isEmpty
+                            ? 'Minimal 10 digit, maksimal 13 digit'
+                            : '${_noWaController.text.length}/13 digit',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _noWaController.text.length < 10
+                              ? Colors.orange
+                              : _noWaController.text.length <= 13
+                                  ? Colors.green
+                                  : Colors.red,
+                        ),
+                      ),
+                      if (_noWaController.text.isNotEmpty)
+                        Text(
+                          validateWhatsAppNumber(_noWaController.text) != null
+                              ? '❌ Tidak valid'
+                              : '✓ Valid',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: validateWhatsAppNumber(_noWaController.text) != null
+                                ? Colors.red
+                                : Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: _buildInputDecor('Email', Icons.email_outlined)),

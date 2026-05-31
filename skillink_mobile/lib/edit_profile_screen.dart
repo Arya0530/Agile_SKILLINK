@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,6 +27,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     'D3 Teknik Informatika',
     'D3 Teknologi Multimedia Broadcasting (MMB)',
   ];
+
+  // ✅ VALIDASI NOMOR WHATSAPP
+  String? validateWhatsAppNumber(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Nomor WhatsApp wajib diisi!';
+    }
+    
+    // Cek hanya angka saja (tidak boleh alfabet)
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+      return 'Nomor WhatsApp hanya boleh berisi angka!';
+    }
+    
+    // Cek panjang minimal 10 dan maksimal 13
+    if (value.length < 10) {
+      return 'Nomor WhatsApp minimal 10 digit!';
+    }
+    
+    if (value.length > 13) {
+      return 'Nomor WhatsApp maksimal 13 digit!';
+    }
+    
+    return null; // Validasi berhasil
+  }
 
   @override
   void initState() {
@@ -98,6 +122,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SnackBar(
           content: Text('Semua field wajib diisi!'),
           backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // ✅ VALIDASI NO WA DULU SEBELUM SUBMIT
+    String? waValidation = validateWhatsAppNumber(_noWaController.text);
+    if (waValidation != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(waValidation),
+          backgroundColor: Colors.orange,
         ),
       );
       return;
@@ -192,8 +228,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               padding: const EdgeInsets.all(20),
               children: [
                 _buildField("Nama Lengkap", "Masukkan nama", _nameController),
-                _buildField(
-                    "Nomor WhatsApp", "0812...", _noWaController),
+                _buildWhatsAppField(),
                 _buildField("Email", "email@gmail.com", _emailController),
                 _buildJurusanDropdown(),
                 _buildField("Password Baru", "Isi jika ingin ganti",
@@ -294,6 +329,82 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 borderSide:
                     const BorderSide(color: Color(0xFF0077B5), width: 1.5),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ WIDGET SPESIAL UNTUK VALIDASI WHATSAPP
+  Widget _buildWhatsAppField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Nomor WhatsApp",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _noWaController,
+            keyboardType: TextInputType.phone,
+            // ✅ HANYA TERIMA ANGKA (0-9)
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              // ✅ BATASI MAX 13 ANGKA
+              LengthLimitingTextInputFormatter(13),
+            ],
+            decoration: InputDecoration(
+              hintText: "0812...",
+              hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFF0077B5), width: 1.5),
+              ),
+            ),
+            onChanged: (value) {
+              // Real-time validation feedback
+              setState(() {});
+            },
+          ),
+          // ✅ TAMPILKAN COUNTER KARAKTER & VALIDASI
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0, left: 12.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _noWaController.text.isEmpty
+                      ? 'Minimal 10 digit, maksimal 13 digit'
+                      : '${_noWaController.text.length}/13 digit',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _noWaController.text.length < 10
+                        ? Colors.orange
+                        : _noWaController.text.length <= 13
+                            ? Colors.green
+                            : Colors.red,
+                  ),
+                ),
+                if (_noWaController.text.isNotEmpty)
+                  Text(
+                    validateWhatsAppNumber(_noWaController.text) != null
+                        ? '❌ Tidak valid'
+                        : '✓ Valid',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: validateWhatsAppNumber(_noWaController.text) != null
+                          ? Colors.red
+                          : Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+              ],
             ),
           ),
         ],

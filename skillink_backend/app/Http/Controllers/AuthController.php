@@ -17,6 +17,15 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6',
+            'no_wa' => 'required|regex:/^[0-9]+$/|min:10|max:13|unique:users',
+            'jurusan' => 'required|string',
+        ], [
+            'no_wa.required' => 'Nomor WhatsApp wajib diisi!',
+            'no_wa.regex' => 'Nomor WhatsApp hanya boleh berisi angka (tidak ada huruf/simbol)!',
+            'no_wa.min' => 'Nomor WhatsApp minimal 10 digit!',
+            'no_wa.max' => 'Nomor WhatsApp maksimal 13 digit!',
+            'no_wa.unique' => 'Nomor WhatsApp sudah terdaftar, gunakan nomor lain!',
+            'jurusan.required' => 'Jurusan wajib dipilih!',
         ]);
 
         // 2. Masukin data ke database (password wajib diacak biar aman)

@@ -44,15 +44,31 @@ class ProfileController extends Controller
     // [BARU] Fungsi buat update profil user (nama, email, no_wa, jurusan)
     public function updateProfile(Request $request)
     {
+        $user = $request->user();
+        
+        // ✅ VALIDASI NOMOR WHATSAPP HANYA JIKA BERUBAH
+        $noWaChanged = $request->input('no_wa') !== $user->no_wa;
+        $noWaRules = 'required|regex:/^[0-9]+$/|min:10|max:13';
+        
+        // Jika nomor WhatsApp berubah, tambahkan unique check
+        if ($noWaChanged) {
+            $noWaRules .= '|unique:users,no_wa';
+        }
+        
         $request->validate([
             'name'    => 'required|string|max:255',
-            'email'   => 'required|email|unique:users,email,' . $request->user()->id,
-            'no_wa'   => 'required|string|max:20',
+            'email'   => 'required|email|unique:users,email,' . $user->id,
+            'no_wa'   => $noWaRules,
             'jurusan' => 'required|string|max:255',
             'password' => 'nullable|string|min:8|confirmed',
+        ], [
+            'no_wa.required' => 'Nomor WhatsApp wajib diisi!',
+            'no_wa.regex' => 'Nomor WhatsApp hanya boleh berisi angka (tidak ada huruf/simbol)!',
+            'no_wa.min' => 'Nomor WhatsApp minimal 10 digit!',
+            'no_wa.max' => 'Nomor WhatsApp maksimal 13 digit!',
+            'no_wa.unique' => 'Nomor WhatsApp sudah terdaftar, gunakan nomor lain!',
         ]);
 
-        $user = $request->user();
         $oldName = $user->name;
         $newName = $request->name;
         
