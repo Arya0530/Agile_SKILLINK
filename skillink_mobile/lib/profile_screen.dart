@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'edit_profile_screen.dart';
 import 'api_config.dart';
 import 'edit_skill_screen.dart';
+import 'edit_project_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -410,13 +411,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               PopupMenuButton<String>(
                 padding: EdgeInsets.zero,
                 icon: const Icon(Icons.more_vert, color: Colors.grey),
-                onSelected: (value) {
+                onSelected: (value) async {
                   if (value == 'edit') {
-                    Navigator.push(
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const EditSkillScreen()),
+                        builder: (context) => EditProjectScreen(
+                          projectId:          id,
+                          initialTitle:       title,
+                          initialRole:        role,
+                          initialDescription: description,
+                        ),
+                      ),
                     );
+                    if (result == true) _fetchProfileData();
                   } else if (value == 'delete') {
                     _deleteItem('projects', id);
                   }

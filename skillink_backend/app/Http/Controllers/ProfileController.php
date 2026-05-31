@@ -130,6 +130,30 @@ class ProfileController extends Controller
         return response()->json(['success' => true]);
     }
 
+    // Fungsi edit project (manual)
+    public function updateProject(Request $request, $id)
+    {
+        $request->validate([
+            'title'       => 'required|string',
+            'role'        => 'required|string',
+            'description' => 'nullable|string',
+        ]);
+
+        $project = $request->user()->projects()->where('id', $id)->first();
+
+        if (!$project) {
+            return response()->json(['success' => false, 'message' => 'Proyek tidak ditemukan'], 404);
+        }
+
+        $project->update([
+            'title'       => $request->title,
+            'role'        => $request->role,
+            'description' => $request->description ?? '',
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Proyek berhasil diperbarui!', 'data' => $project]);
+    }
+
     // Fungsi hapus project (manual)
     public function deleteProject(Request $request, $id)
     {
