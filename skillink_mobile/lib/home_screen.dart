@@ -32,7 +32,10 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
   final TextEditingController _searchController = TextEditingController();
   final Set<int> _expandedPosts = {};
 
-  // ===== [BARU] FILTER STATE =====
+  // [BARU] Variabel untuk melacak post mana yang sedang loading saat di-apply
+  final Set<int> _applyingPosts = {};
+
+  // ===== FILTER STATE =====
   // Menyimpan jenis postingan yang dipilih untuk filter.
   // null = tidak ada filter aktif (tampilkan semua).
   String? _selectedFilterType;
@@ -116,7 +119,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
   }
 
   // ─── FETCH: FOR YOU ────────────────────────────────────────────────────────
-  // [DIPERBARUI] Menambahkan parameter 'post_type' ke query jika filter aktif.
 
   Future<void> fetchPosts() async {
     setState(() => _isLoadingForYou = true);
@@ -160,7 +162,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
   }
 
   // ─── FETCH: MY POST ────────────────────────────────────────────────────────
-  // [DIPERBARUI] Menambahkan parameter 'post_type' ke query jika filter aktif.
 
   Future<void> _fetchMyPosts() async {
     setState(() => _isLoadingMyPost = true);
@@ -224,8 +225,7 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     _fetchMyPosts();
   }
 
-  // ─── [BARU] SHOW FILTER BOTTOM SHEET ──────────────────────────────────────
-  // Menampilkan bottom sheet berisi pilihan jenis postingan untuk filter.
+  // ─── SHOW FILTER BOTTOM SHEET ──────────────────────────────────────────────
 
   void _showFilterBottomSheet() {
     showModalBottomSheet(
@@ -234,8 +234,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
-        // Menggunakan StatefulBuilder agar pilihan langsung ter-highlight
-        // sebelum di-apply tanpa perlu rebuild seluruh halaman.
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
@@ -255,7 +253,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      // Tombol reset filter jika ada filter aktif
                       if (_selectedFilterType != null)
                         TextButton(
                           onPressed: () {
@@ -283,7 +280,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
                     final bool isSelected = _selectedFilterType == type;
                     return GestureDetector(
                       onTap: () {
-                        // Toggle: kalau sudah dipilih, klik lagi = reset
                         setModalState(() {});
                         setState(() {
                           _selectedFilterType =
@@ -352,8 +348,7 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     );
   }
 
-  // ─── [BARU] HELPER: ICON PER JENIS POSTINGAN ──────────────────────────────
-  // Mengembalikan icon yang sesuai untuk masing-masing jenis postingan.
+  // ─── HELPER: ICON PER JENIS POSTINGAN ─────────────────────────────────────
 
   IconData _iconForPostType(String type) {
     switch (type) {
@@ -406,6 +401,14 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
   }
 
   Future<void> _applyJob(int postId) async {
+    // 1. Cek apakah sedang proses apply. Jika iya, batalkan.
+    if (_applyingPosts.contains(postId)) return;
+
+    // 2. Tandai postingan ini sedang dalam proses apply
+    setState(() {
+      _applyingPosts.add(postId);
+    });
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('user_token');
 
@@ -437,22 +440,28 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
       );
 
       if (response.statusCode == 200) {
-  setState(() {
-    final index =
-        _forYouPosts.indexWhere((post) => post['id'] == postId);
+        setState(() {
+          final index =
+              _forYouPosts.indexWhere((post) => post['id'] == postId);
 
-    if (index != -1) {
-      _forYouPosts[index]['user_already_applied'] = true;
-    }
-  });
-}
-
+          if (index != -1) {
+            _forYouPosts[index]['user_already_applied'] = true;
+          }
+        });
+      }
     } catch (e) {
       debugPrint('Gagal Apply: $e');
+    } finally {
+      // 3. Pastikan menghapus status loading saat proses selesai
+      if (mounted) {
+        setState(() {
+          _applyingPosts.remove(postId);
+        });
+      }
     }
   }
 
-  // ─── [BARU] TUTUP REKRUTMEN ────────────────────────────────────────────────
+  // ─── TUTUP REKRUTMEN ───────────────────────────────────────────────────────
 
   Future<void> _closeRecruitment(int postId) async {
     final confirm = await showDialog<bool>(
@@ -515,7 +524,7 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     }
   }
 
-  // ─── [BARU] PROYEK SELESAI ─────────────────────────────────────────────────
+  // ─── PROYEK SELESAI ────────────────────────────────────────────────────────
 
   Future<void> _completeProject(int postId) async {
     final confirm = await showDialog<bool>(
@@ -644,6 +653,9 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
     final bool kuotaPenuh =
         maxAnggota > 0 && acceptedCount >= maxAnggota;
     final bool isOwn = post['author_name'] == myName;
+    
+    // [BARU] Mengecek apakah post ini sedang dalam proses apply
+    final bool isApplying = _applyingPosts.contains(post['id']);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -820,25 +832,35 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
                     isApply: isApply)
               else if (!isOwn)
                 ElevatedButton(
-                  onPressed: (kuotaPenuh || isApply)
+                  // [DIPERBARUI] Disable tombol jika apply sedang diproses
+                  onPressed: (kuotaPenuh || isApply || isApplying)
                       ? null
                       : () => _applyJob(post['id']),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: (kuotaPenuh || isApply)
+                    backgroundColor: (kuotaPenuh || isApply || isApplying)
                         ? Colors.grey.shade400
                         : const Color(0xFF0077B5),
                     disabledBackgroundColor: Colors.grey.shade300,
                   ),
-                  child: Text(
-                    kuotaPenuh
-                        ? 'Kuota Penuh'
-                        : (isApply ? 'sudah apply' : 'Apply'),
-                    style: TextStyle(
-                      color: (kuotaPenuh || isApply)
-                          ? Colors.grey.shade600
-                          : Colors.white,
-                    ),
-                  ),
+                  child: isApplying
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          kuotaPenuh
+                              ? 'Kuota Penuh'
+                              : (isApply ? 'sudah apply' : 'Apply'),
+                          style: TextStyle(
+                            color: (kuotaPenuh || isApply)
+                                ? Colors.grey.shade600
+                                : Colors.white,
+                          ),
+                        ),
                 )
               else
                 const Text('Postingan Sendiri',
@@ -1013,7 +1035,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          // [DIPERBARUI] Pesan kosong sesuai kondisi filter
                           isMyPost
                               ? (_searchQuery.isNotEmpty || _selectedFilterType != null
                                   ? 'Postinganmu tidak ditemukan\ndengan filter ini.'
@@ -1044,7 +1065,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
 
   @override
   Widget build(BuildContext context) {
-    // [BARU] Cek apakah ada filter yang sedang aktif untuk badge indikator
     final bool isFilterActive = _selectedFilterType != null;
 
     return Scaffold(
@@ -1073,13 +1093,11 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
           ),
 
           // ── SEARCH BAR + FILTER ICON ─────────────────────────────
-          // [DIPERBARUI] Menambahkan icon filter di sebelah kanan search bar.
           Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
             child: Row(
               children: [
-                // Search TextField (diperluas mengisi sisa ruang)
                 Expanded(
                   child: TextField(
                     controller: _searchController,
@@ -1117,13 +1135,10 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
                     ),
                   ),
                 ),
-
-                // [BARU] Tombol Filter dengan badge jika filter aktif
                 const SizedBox(width: 8),
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    // Tombol filter utama
                     GestureDetector(
                       onTap: _showFilterBottomSheet,
                       child: Container(
@@ -1143,8 +1158,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
                         ),
                       ),
                     ),
-
-                    // Badge titik merah kecil saat filter aktif
                     if (isFilterActive)
                       Positioned(
                         top: -2,
@@ -1164,8 +1177,7 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
             ),
           ),
 
-          // [BARU] Chip penanda filter aktif — tampil di bawah search bar
-          // Memudahkan user tahu filter apa yang sedang aktif + bisa di-tap untuk reset
+          // Filter aktif badge indicator
           if (isFilterActive)
             Container(
               color: Colors.white,
@@ -1194,7 +1206,6 @@ class SmartFeedScreenState extends State<SmartFeedScreen>
                       color: Color(0xFF0077B5),
                     ),
                     onDeleted: () {
-                      // Tap X di chip untuk reset filter
                       setState(() => _selectedFilterType = null);
                       fetchPosts();
                       _fetchMyPosts();
